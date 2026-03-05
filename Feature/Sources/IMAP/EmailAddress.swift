@@ -1,4 +1,5 @@
 import EmailAddress
+import MIME
 import NIOIMAPCore
 
 extension [EmailAddressListElement] {
@@ -17,7 +18,10 @@ extension EmailAddressListElement {
 extension NIOIMAPCore.EmailAddressGroup: @retroactive CustomStringConvertible {
 
     // MARK: CustomStringConvertible
-    public var description: String { groupName.readableBytesView.description }  // TODO: Decode quoted-printable/base64 (RFC 2047)
+    public var description: String {
+        let description: String = groupName.readableBytesView.description
+        return (try? description.headerDecoded()) ?? description
+    }
 }
 
 extension NIOIMAPCore.EmailAddress: @retroactive CustomStringConvertible {
@@ -32,7 +36,8 @@ extension NIOIMAPCore.EmailAddress: @retroactive CustomStringConvertible {
             return ""
         }
         let description: String = "\(mailbox)@\(host)"
-        if let personName: String = personName?.readableBytesView.description,  // TODO: Decode quoted-printable/base64 (RFC 2047)
+        if let personName,
+            let personName: String = try? personName.readableBytesView.description.headerDecoded(),
             !personName.isEmpty
         {
             return "\(personName) <\(description)>"

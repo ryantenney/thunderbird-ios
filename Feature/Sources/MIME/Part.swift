@@ -70,7 +70,7 @@ public struct Part: CustomStringConvertible, RawRepresentable, Sendable {
         for component in components[0..<index] {
             let header: [String] = component.components(separatedBy: ": ").map { $0.trimmed() }
             guard header.count == 2 else { continue }
-            switch header[0].lowercased() {  // MIME headers are case-sensitive, but no harm with fuzzy matching
+            switch header[0].lowercased() {  // MIME headers are case-sensitive, but no harm in fuzzy matching
             case "content-disposition":
                 contentDisposition = ContentDisposition(rawValue: header[1])
             case "content-transfer-encoding":

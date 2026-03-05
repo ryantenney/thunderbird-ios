@@ -40,7 +40,7 @@ public struct Envelope: Sendable {
     }
 
     init(_ envelope: NIOIMAPCore.Envelope) {
-        subject = envelope.subject?.readableBytesView.description  // TODO: Decode quoted-printable/base64 (RFC 2047)
+        subject = try? envelope.subject?.readableBytesView.description.headerDecoded()
         from = envelope.from.addresses
         sender = envelope.sender.addresses
         reply = envelope.reply.addresses
