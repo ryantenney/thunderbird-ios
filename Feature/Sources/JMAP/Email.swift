@@ -97,6 +97,24 @@ public struct Email: Decodable, Equatable, Hashable, Identifiable, Sendable {
 
     }
 
+    /// Decoded body content returned when `fetchHTMLBodyValues` or `fetchTextBodyValues` is requested.
+    public struct BodyValue: Decodable, Sendable {
+        public let value: String
+        public let isEncodingProblem: Bool
+        public let isTruncated: Bool
+
+        public init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            value = try container.decode(String.self, forKey: .value)
+            isEncodingProblem = try container.decodeIfPresent(Bool.self, forKey: .isEncodingProblem) ?? false
+            isTruncated = try container.decodeIfPresent(Bool.self, forKey: .isTruncated) ?? false
+        }
+
+        private enum CodingKeys: CodingKey {
+            case value, isEncodingProblem, isTruncated
+        }
+    }
+
     public let blobID: String
     public let threadID: String
     public let mailboxIDs: [String: Bool]
@@ -115,12 +133,24 @@ public struct Email: Decodable, Equatable, Hashable, Identifiable, Sendable {
     public let bcc: [Address]?
     public let subject: String?
     public let bodyStructure: BodyPart?
-    // public let bodyValues: Any?
+    public let bodyValues: [String: BodyValue]
     public let textBody: [BodyPart]
     public let htmlBody: [BodyPart]
     public let attachments: [BodyPart]
     public let hasAttachment: Bool
     public let preview: String?
+
+    /// HTML body content extracted from `bodyValues`, if available.
+    public var htmlContent: String? {
+        guard let part = htmlBody.first, let partID = part.partID else { return nil }
+        return bodyValues[partID]?.value
+    }
+
+    /// Plain text body content extracted from `bodyValues`, if available.
+    public var textContent: String? {
+        guard let part = textBody.first, let partID = part.partID else { return nil }
+        return bodyValues[partID]?.value
+    }
 
     // MARK: Decodable
     public init(from decoder: any Decoder) throws {
@@ -144,6 +174,7 @@ public struct Email: Decodable, Equatable, Hashable, Identifiable, Sendable {
         bcc = try container.decodeIfPresent([Address].self, forKey: .bcc)
         subject = try container.decodeIfPresent(String.self, forKey: .subject)
         bodyStructure = try container.decodeIfPresent(BodyPart.self, forKey: .bodyStructure)
+        bodyValues = try container.decodeIfPresent([String: BodyValue].self, forKey: .bodyValues) ?? [:]
         textBody = try container.decode([BodyPart].self, forKey: .textBody)
         htmlBody = try container.decode([BodyPart].self, forKey: .htmlBody)
         attachments = try container.decode([BodyPart].self, forKey: .attachments)
@@ -152,7 +183,7 @@ public struct Email: Decodable, Equatable, Hashable, Identifiable, Sendable {
     }
 
     private enum Key: CodingKey {
-        case blobId, threadId, mailboxIds, keywords, size, receivedAt, sentAt, messageId, inReplyTo, references, sender, from, replyTo, to, cc, bcc, subject, bodyStructure, textBody, htmlBody, attachments, hasAttachment, preview, id
+        case blobId, threadId, mailboxIds, keywords, size, receivedAt, sentAt, messageId, inReplyTo, references, sender, from, replyTo, to, cc, bcc, subject, bodyStructure, bodyValues, textBody, htmlBody, attachments, hasAttachment, preview, id
     }
 
     // MARK: Equatable

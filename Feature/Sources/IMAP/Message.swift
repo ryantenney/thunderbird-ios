@@ -4,7 +4,9 @@ import NIOIMAPCore
 public typealias BodyStructure = NIOIMAPCore.BodyStructure
 public typealias SequenceNumber = NIOIMAPCore.SequenceNumber
 public typealias SequenceSet = NIOIMAPCore.MessageIdentifierSetNonEmpty<SequenceNumber>
+public typealias SectionSpecifier = NIOIMAPCore.SectionSpecifier
 public typealias UID = NIOIMAPCore.UID
+public typealias UIDRange = NIOIMAPCore.MessageIdentifierRange<UID>
 public typealias UIDSet = NIOIMAPCore.UIDSetNonEmpty
 
 public struct Message: Sendable {

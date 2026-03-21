@@ -1,9 +1,10 @@
 import Account
 import Foundation
+import IMAP
 import JMAP
 import OSLog
 
-/// Bridges `Account.Server` configuration to the JMAP protocol client,
+/// Bridges `Account.Server` configuration to JMAP or IMAP protocol clients,
 /// fetching emails and exposing them as `DisplayEmail` for the UI.
 @Observable
 @MainActor
@@ -13,8 +14,7 @@ class EmailService {
     private(set) var error: Error?
 
     private let account: Account.Account
-    private var client: JMAPClient?
-    private var inboxMailbox: JMAP.Mailbox?
+    private var mailClient: MailClient?
 
     private let logger = Logger(subsystem: "net.thunderbird", category: "EmailService")
 
@@ -22,32 +22,16 @@ class EmailService {
         self.account = account
     }
 
-    /// Fetch the inbox email list from the JMAP server.
+    /// Fetch the inbox email list from the configured server.
     func fetchInbox() async {
         guard !isLoading else { return }
         isLoading = true
         error = nil
 
         do {
-            let client = try makeClient()
-            self.client = client
-
-            // Start session
-            try await client.session()
-
-            // Find the inbox mailbox
-            let mailboxes = try await client.mailboxes()
-            guard let inbox = mailboxes.first(where: { $0.role == .inbox }) else {
-                throw EmailServiceError.inboxNotFound
+            try await withRetry {
+                try await self.doFetchInbox()
             }
-            self.inboxMailbox = inbox
-
-            // Fetch emails in inbox
-            let jmapEmails = try await client.emails(in: inbox)
-
-            // Map to display model
-            emails = jmapEmails.map { DisplayEmail(from: $0) }
-            logger.info("Fetched \(self.emails.count) emails from inbox")
         } catch {
             self.error = error
             logger.error("Failed to fetch inbox: \(error)")
@@ -58,24 +42,13 @@ class EmailService {
 
     /// Fetch the HTML body for a specific email (lazy loading on tap).
     func fetchBody(for email: DisplayEmail) async -> String? {
-        // JMAP emails include preview but not full body in the initial fetch.
-        // If we already have the body cached, return it.
         if let cached = emails.first(where: { $0.id == email.id })?.htmlBody {
             return cached
         }
 
         do {
-            guard let client else {
-                throw EmailServiceError.notConnected
-            }
-            let fullEmails = try await client.emails([email.id])
-            guard let fullEmail = fullEmails.first else {
-                return nil
-            }
-
-            // Update the cached email with body content
-            let body = fullEmail.preview ?? ""
-            if let index = emails.firstIndex(where: { $0.id == email.id }) {
+            let body = try await doFetchBody(for: email)
+            if let body, let index = emails.firstIndex(where: { $0.id == email.id }) {
                 emails[index].htmlBody = body
             }
             return body
@@ -87,15 +60,79 @@ class EmailService {
 
     // MARK: - Private
 
-    private func makeClient() throws -> JMAPClient {
+    private enum MailClient {
+        case jmap(JMAPClient)
+        case imap(IMAPClient)
+    }
+
+    // MARK: Fetch Implementations
+
+    private func doFetchInbox() async throws {
         guard let server = account.incomingServer else {
             throw EmailServiceError.noIncomingServer
         }
-        guard server.serverProtocol == .jmap else {
+
+        switch server.serverProtocol {
+        case .jmap:
+            try await fetchJMAPInbox(server: server)
+        case .imap:
+            try await fetchIMAPInbox(server: server)
+        default:
             throw EmailServiceError.unsupportedProtocol(server.serverProtocol)
         }
+    }
 
-        let authorization = mapAuthorization(server.authorization)
+    private func doFetchBody(for email: DisplayEmail) async throws -> String? {
+        guard let mailClient else {
+            throw EmailServiceError.notConnected
+        }
+
+        switch mailClient {
+        case .jmap(let client):
+            return try await fetchJMAPBody(email: email, client: client)
+        case .imap(let client):
+            return try await fetchIMAPBody(email: email, client: client)
+        }
+    }
+
+    // MARK: JMAP
+
+    private func fetchJMAPInbox(server: Account.Server) async throws {
+        let client = makeJMAPClient(from: server)
+        self.mailClient = .jmap(client)
+
+        try await client.session()
+
+        let mailboxes = try await client.mailboxes()
+        guard let inbox = mailboxes.first(where: { $0.role == .inbox }) else {
+            throw EmailServiceError.inboxNotFound
+        }
+
+        let jmapEmails = try await client.emails(in: inbox)
+        emails = jmapEmails.map { DisplayEmail(from: $0) }
+            .sorted { $0.date > $1.date }
+        logger.info("Fetched \(self.emails.count) JMAP emails from inbox")
+    }
+
+    private func fetchJMAPBody(email: DisplayEmail, client: JMAPClient) async throws -> String? {
+        let bodyConfig = JMAP.Email.GetMethod.Configuration(
+            fetchTextBodyValues: true,
+            fetchHTMLBodyValues: true
+        )
+        let fullEmails = try await client.emails([email.id], configuration: bodyConfig)
+        guard let fullEmail = fullEmails.first else { return nil }
+
+        if let html = fullEmail.htmlContent {
+            return html
+        }
+        if let text = fullEmail.textContent {
+            return "<pre style=\"font-family: sans-serif; white-space: pre-wrap;\">\(text)</pre>"
+        }
+        return fullEmail.preview
+    }
+
+    private func makeJMAPClient(from server: Account.Server) -> JMAPClient {
+        let authorization = mapJMAPAuthorization(server.authorization)
         let jmapServer = JMAP.Server(
             authorization: authorization,
             host: server.hostname,
@@ -104,8 +141,7 @@ class EmailService {
         return JMAPClient(jmapServer)
     }
 
-    /// Map `Account.Authorization` to `JMAP.Authorization`.
-    private func mapAuthorization(_ auth: Account.Authorization) -> JMAP.Authorization {
+    private func mapJMAPAuthorization(_ auth: Account.Authorization) -> JMAP.Authorization {
         switch auth {
         case .basic(let user, let password):
             return .basic(user, password)
@@ -115,13 +151,111 @@ class EmailService {
             return .empty
         }
     }
+
+    // MARK: IMAP
+
+    private func fetchIMAPInbox(server: Account.Server) async throws {
+        let client = try makeIMAPClient(from: server)
+        self.mailClient = .imap(client)
+
+        try await client.connect()
+        try await client.login()
+
+        let mailboxes = try await client.list()
+        guard let inbox = mailboxes.first(where: { $0.path.name.isInbox }) else {
+            throw EmailServiceError.inboxNotFound
+        }
+
+        try await client.select(mailbox: inbox)
+
+        let messageSet = try await client.fetch(
+            attributes: .standard  // .envelope, .flags, .uid
+        )
+
+        emails = messageSet.messages.reversed().map { DisplayEmail(from: $0) }
+            .sorted { $0.date > $1.date }
+        logger.info("Fetched \(self.emails.count) IMAP emails from inbox")
+    }
+
+    private func fetchIMAPBody(email: DisplayEmail, client: IMAPClient) async throws -> String? {
+        guard let uidValue = UInt32(email.id) else { return nil }
+        let uid = IMAP.UID(rawValue: uidValue)
+        let uidSet = IMAP.UIDSet(IMAP.UIDRange(uid))
+
+        let messages = try await client.fetch(
+            uidSet,
+            attributes: [.bodySection(peek: true, IMAP.SectionSpecifier(kind: .text), nil)]
+        )
+
+        for message in messages.values {
+            for component in message.components {
+                if case .bodyPart(_, let data) = component {
+                    return String(data: data, encoding: .utf8)
+                }
+            }
+        }
+        return nil
+    }
+
+    private func makeIMAPClient(from server: Account.Server) throws -> IMAPClient {
+        guard case .basic(_, let password) = server.authorization else {
+            throw EmailServiceError.imapOAuthNotSupported
+        }
+
+        let connectionSecurity: IMAP.ConnectionSecurity =
+            IMAP.ConnectionSecurity(rawValue: server.connectionSecurity.rawValue) ?? .tls
+
+        let imapServer = IMAP.Server(
+            connectionSecurity,
+            hostname: server.hostname,
+            username: server.username,
+            password: password,
+            port: server.port
+        )
+        return IMAPClient(imapServer)
+    }
+
+    // MARK: Retry
+
+    private func withRetry(_ operation: @escaping () async throws -> Void) async throws {
+        do {
+            try await operation()
+        } catch {
+            if shouldRetry(error) {
+                logger.info("Retrying after error: \(error)")
+                mailClient = nil
+                try await operation()
+            } else {
+                throw error
+            }
+        }
+    }
+
+    private func shouldRetry(_ error: Error) -> Bool {
+        if let urlError = error as? URLError {
+            return [.networkConnectionLost, .timedOut, .notConnectedToInternet]
+                .contains(urlError.code)
+        }
+        if let imapError = error as? IMAPError {
+            switch imapError {
+            case .notConnected, .serverDisconnected, .timedOut:
+                return true
+            default:
+                return false
+            }
+        }
+        return false
+    }
 }
+
+// MARK: - Errors
 
 enum EmailServiceError: LocalizedError {
     case noIncomingServer
     case inboxNotFound
     case notConnected
     case unsupportedProtocol(Account.ServerProtocol)
+    case imapOAuthNotSupported
 
     var errorDescription: String? {
         switch self {
@@ -129,6 +263,7 @@ enum EmailServiceError: LocalizedError {
         case .inboxNotFound: "Inbox mailbox not found"
         case .notConnected: "Not connected to server"
         case .unsupportedProtocol(let proto): "Unsupported protocol: \(proto)"
+        case .imapOAuthNotSupported: "IMAP with OAuth is not yet supported. Please use a password-based account."
         }
     }
 }
@@ -149,5 +284,73 @@ extension DisplayEmail {
         self.hasAttachment = jmapEmail.hasAttachment
         self.threadId = jmapEmail.threadID
         self.htmlBody = nil  // Loaded lazily
+    }
+}
+
+// MARK: - DisplayEmail IMAP initializer
+
+extension DisplayEmail {
+    init(from message: IMAP.Message) {
+        var subject = "(No Subject)"
+        var sender = "Unknown"
+        var senderEmail = ""
+        var recipients: [String] = []
+        var date = Date()
+        var isRead = false
+        var uid = ""
+        var hasAttachment = false
+
+        for component in message.components {
+            switch component {
+            case .envelope(let envelope):
+                subject = envelope.subject ?? "(No Subject)"
+                if let from = envelope.from.first?.addresses.first {
+                    sender = from.label ?? from.value
+                    senderEmail = from.value
+                }
+                recipients = envelope.to.flatMap { $0.addresses }.map { $0.label ?? $0.value }
+                if let envelopeDate = envelope.date {
+                    date = envelopeDate.date
+                }
+            case .flags(let flags):
+                isRead = flags.contains(.seen)
+            case .uid(let u):
+                uid = "\(u.rawValue)"
+            case .internalDate(let d):
+                date = d
+            case .bodyStructure(let structure, _):
+                hasAttachment = Self.detectAttachments(in: structure)
+            default:
+                break
+            }
+        }
+
+        self.init(
+            id: uid.isEmpty ? UUID().uuidString : uid,
+            sender: sender,
+            senderEmail: senderEmail,
+            subject: subject,
+            preview: "",
+            date: date,
+            recipients: recipients,
+            isRead: isRead,
+            hasAttachment: hasAttachment,
+            threadId: nil,
+            htmlBody: nil
+        )
+    }
+
+    private static func detectAttachments(in structure: IMAP.BodyStructure) -> Bool {
+        switch structure {
+        case .multipart(let multipart):
+            return multipart.parts.contains { detectAttachments(in: $0) }
+        case .singlepart(let singlepart):
+            if let ext = singlepart.extension,
+               let disposition = ext.dispositionAndLanguage?.disposition,
+               case .attachment = disposition.kind {
+                return true
+            }
+            return false
+        }
     }
 }

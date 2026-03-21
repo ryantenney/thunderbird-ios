@@ -34,8 +34,8 @@ struct ContentView: View {
             }
             let account = accounts.allAccounts[0]
             hasAuthorization =
-                account.incomingServer?.authorization != nil
-                && account.outgoingServer?.authorization != nil
+                account.incomingServer.map { $0.authorization != .none } == true
+                && account.outgoingServer.map { $0.authorization != .none } == true
 
             if hasAuthorization {
                 emailService = EmailService(account: account)
