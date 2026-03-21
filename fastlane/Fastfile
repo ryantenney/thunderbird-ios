@@ -13,6 +13,35 @@
 default_platform(:ios)
 
 platform :ios do
+  desc "Run tests on the iOS simulator"
+  lane :test do
+    device = ENV["TEST_DEVICE"] || "iPhone 16"
+    run_tests(
+      scheme: "Thunderbird",
+      workspace: "Thunderbird.xcworkspace",
+      destination: "platform=iOS Simulator,name=#{device}",
+      code_coverage: true,
+      clean: true
+    )
+  end
+
+  desc "Run swift-format lint check"
+  lane :lint do
+    sh("cd .. && xcrun swift-format lint . --parallel --recursive --strict")
+  end
+
+  desc "Clean build without signing (compilation check)"
+  lane :build do
+    xcodebuild(
+      scheme: "Thunderbird",
+      workspace: "Thunderbird.xcworkspace",
+      destination: "generic/platform=iOS Simulator",
+      build: true,
+      clean: true,
+      xcargs: "CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO"
+    )
+  end
+
   desc "Build and upload to TestFlight"
   lane :beta do
     # Ensure no uncommited changes
