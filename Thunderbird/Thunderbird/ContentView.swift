@@ -4,13 +4,14 @@ import Account
 struct ContentView: View {
     @State private var isPresented: Bool = false
     @State private var hasAuthorization: Bool = false
+    @State private var emailService: EmailService?
     @Environment(Accounts.self) private var accounts: Accounts
 
     // MARK: View
     var body: some View {
         VStack {
-            if hasAuthorization {
-                EmailListView()
+            if hasAuthorization, let emailService {
+                EmailListView(emailService: emailService)
                     .environment(accounts)
 
             } else {
@@ -28,13 +29,20 @@ struct ContentView: View {
         .onChange(of: accounts.allAccounts, initial: true) {
             guard !accounts.allAccounts.isEmpty else {
                 hasAuthorization = false
+                emailService = nil
                 return
             }
+            let account = accounts.allAccounts[0]
             hasAuthorization =
-                accounts
-                .allAccounts[0].incomingServer?.authorization != nil
-                && accounts
-                    .allAccounts[0].outgoingServer?.authorization != nil
+                account.incomingServer?.authorization != nil
+                && account.outgoingServer?.authorization != nil
+
+            if hasAuthorization {
+                emailService = EmailService(account: account)
+            } else {
+                emailService = nil
+            }
+
             isPresented = false
         }
     }

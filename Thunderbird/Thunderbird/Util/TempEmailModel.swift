@@ -7,6 +7,23 @@
 
 import Foundation
 
+/// A protocol-agnostic email model for display in the UI.
+/// Can be constructed from JMAP Email or (later) IMAP Message data.
+struct DisplayEmail: Hashable, Identifiable {
+    let id: String
+    let sender: String
+    let senderEmail: String
+    let subject: String
+    let preview: String
+    let date: Date
+    let recipients: [String]
+    let isRead: Bool
+    let hasAttachment: Bool
+    let threadId: String?
+    /// HTML body content, populated lazily when the user opens the email.
+    var htmlBody: String?
+}
+
 import SwiftData
 @Model
 class TempEmail {

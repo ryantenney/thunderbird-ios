@@ -32,6 +32,18 @@ struct EmailCellView: View {
         self.pinned = email.pinned
     }
 
+    init(email: DisplayEmail) {
+        self.senderText = email.sender
+        self.headerText = email.subject
+        self.bodyText = email.preview
+        self.dateSent = email.date
+        self.unread = !email.isRead
+        self.newEmail = false
+        self.hasAttachment = email.hasAttachment
+        self.isThread = email.threadId != nil
+        self.pinned = false
+    }
+
     //Doesn't display times properly yes
     func dateFormatter(date: Date) -> String {
         if Calendar.current.isDateInToday(date) {

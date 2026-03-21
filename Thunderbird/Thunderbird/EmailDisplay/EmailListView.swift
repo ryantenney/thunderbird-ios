@@ -11,21 +11,7 @@ import Account
 struct EmailListView: View {
     @Environment(Accounts.self) private var accounts: Accounts
     @Environment(\.openURL) private var openURL
-    let tempEmails = TempEmail.sampleData
-
-    //Hardcoded for testing
-    let attributedString = try? NSMutableAttributedString(
-        data: Data(
-            """
-            <html>
-            <body>
-            <h2>This is a test email with a bit of text</h2>
-            <p>Its doing its best to model how an email might look</p>
-            </body>
-            </html>
-            """.utf8),
-        options: [.documentType: NSAttributedString.DocumentType.html], documentAttributes: nil
-    )
+    var emailService: EmailService
 
     func sortEmails() {
         //Not yet implemented
@@ -36,7 +22,35 @@ struct EmailListView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
-                if tempEmails.isEmpty {
+                if emailService.isLoading && emailService.emails.isEmpty {
+                    VStack {
+                        ProgressView("Loading emails…")
+                            .padding()
+                        Spacer()
+                    }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = emailService.error, emailService.emails.isEmpty {
+                    VStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                            .padding(.bottom, 8)
+                        Text("Failed to load emails")
+                            .font(.headline)
+                            .padding(.bottom, 4)
+                        Text(error.localizedDescription)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        Button("Retry") {
+                            Task { await emailService.fetchInbox() }
+                        }
+                        .buttonBorderShape(.capsule)
+                        .buttonStyle(.bordered)
+                        .padding(.top, 8)
+                        Spacer()
+                    }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if emailService.emails.isEmpty {
                     VStack {
                         Text("empty_inbox")
                             .padding(.bottom, 5)
@@ -52,7 +66,7 @@ struct EmailListView: View {
                         Spacer()
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    List(tempEmails) { email in
+                    List(emailService.emails) { email in
                         EmailCellView(email: email)
                             .listRowSeparator(.hidden)
                             .background {
@@ -61,13 +75,13 @@ struct EmailListView: View {
                                 }.opacity(0)
                             }
                     }.listStyle(.plain)
-                        .navigationDestination(for: TempEmail.self) { tempEmail in
-                            //Eventually will pass the email object
-                            ReadEmailView(
-                                tempEmail
-                            )
+                        .navigationDestination(for: DisplayEmail.self) { displayEmail in
+                            ReadEmailView(displayEmail, emailService: emailService)
                         }
                         .scrollContentBackground(.hidden)
+                        .refreshable {
+                            await emailService.fetchInbox()
+                        }
                 }
                 Button {
                     // Action
@@ -128,12 +142,15 @@ struct EmailListView: View {
                 }
             }
         }
-
+        .task {
+            await emailService.fetchInbox()
+        }
     }
 }
 
 #Preview("Email List") {
     @Previewable @State var accounts: Accounts = Accounts()
-    EmailListView().environment(accounts)
-
+    let previewAccount = Account.Account(name: "Preview")
+    EmailListView(emailService: EmailService(account: previewAccount))
+        .environment(accounts)
 }
