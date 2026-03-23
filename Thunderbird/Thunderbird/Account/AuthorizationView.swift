@@ -16,6 +16,7 @@ struct AuthorizationView: View {
             self.password = password
         case .oauth(_, let token):
             self.token = token
+            self.apiTokenString = token.description
         case .none:
             break
         }
@@ -26,6 +27,7 @@ struct AuthorizationView: View {
     @Binding private var error: Error?
     @State private var password: String = ""
     @State private var token: Token?
+    @State private var apiTokenString: String = ""
 
     // MARK: View
     var body: some View {
@@ -42,6 +44,15 @@ struct AuthorizationView: View {
                         authorization = .oauth(user: username, token: token)
                     } else {
                         authorization = .none
+                    }
+                }
+        case .apiToken:
+            SecureField("API Token", text: $apiTokenString)
+                .onChange(of: apiTokenString) {
+                    if apiTokenString.isEmpty {
+                        authorization = .none
+                    } else {
+                        authorization = .oauth(user: username, token: .bearer(apiTokenString))
                     }
                 }
         case .none:

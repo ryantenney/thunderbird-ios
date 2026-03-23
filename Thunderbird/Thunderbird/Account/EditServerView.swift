@@ -99,7 +99,7 @@ struct EditServerView: View {
 private extension AuthenticationType {
     var text: String {
         switch self {
-        case .oAuth2: description
+        case .oAuth2, .apiToken: description
         default: description.capitalized
         }
     }
