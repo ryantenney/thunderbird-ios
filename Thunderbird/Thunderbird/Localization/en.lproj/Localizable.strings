@@ -23,6 +23,7 @@
 "jmap_text" = "JSON Meta Application Protocol";
 "account_choose_email_type_label" = "Choose Email Account Type";
 "account_server_settings_server_label" = "Server";
+"account_server_settings_username_label" = "Username";
 "account_incoming_server_label" = "Incoming Server";
 "account_outgoing_server_label" = "Outgoing Server";
 "account_server_edit_configuration" = "Edit Configuration";

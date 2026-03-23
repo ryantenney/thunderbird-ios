@@ -27,23 +27,19 @@ struct ContentView: View {
 
         }
         .onChange(of: accounts.allAccounts, initial: true) {
-            guard !accounts.allAccounts.isEmpty else {
+            // Find the first account with a configured incoming server
+            let configuredAccount = accounts.allAccounts.first { account in
+                account.incomingServer != nil
+            }
+
+            if let account = configuredAccount {
+                hasAuthorization = true
+                emailService = EmailService(account: account)
+                isPresented = false
+            } else {
                 hasAuthorization = false
                 emailService = nil
-                return
             }
-            let account = accounts.allAccounts[0]
-            hasAuthorization =
-                account.incomingServer.map { $0.authorization != .none } == true
-                && account.outgoingServer.map { $0.authorization != .none } == true
-
-            if hasAuthorization {
-                emailService = EmailService(account: account)
-            } else {
-                emailService = nil
-            }
-
-            isPresented = false
         }
     }
 }

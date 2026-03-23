@@ -14,14 +14,18 @@ struct ManualServerSetup: View {
         let tempAccount = loginDetails.inProgressAccount ?? Account(loginDetails.enteredEmail)
         self.account = tempAccount
         self.manualConfig = loginDetails.inProgressAccount != nil
-        self.incomingServer = tempAccount.incomingServer?.clone() ?? Server(.imap)
-        self.outgoingServer = tempAccount.outgoingServer?.clone() ?? Server(.smtp)
+        let isJmap = loginDetails.serverProtocol == .jmap
+        let defaultUsername = String(loginDetails.enteredEmail)
+        self.incomingServer = tempAccount.incomingServer?.clone() ?? Server(isJmap ? .jmap : .imap, username: defaultUsername)
+        self.outgoingServer = tempAccount.outgoingServer?.clone() ?? Server(isJmap ? .jmap : .smtp, username: defaultUsername)
         self.inSelectedSecurity = tempAccount.incomingServer?.connectionSecurity == .tls
         self.outSelectedSecurity = tempAccount.outgoingServer?.connectionSecurity == .tls
         self.incomingHostname = tempAccount.incomingServer?.hostname ?? ""
         self.incomingPort = tempAccount.incomingServer?.port
         self.outGoingHostname = tempAccount.outgoingServer?.hostname ?? ""
         self.outGoingPort = tempAccount.outgoingServer?.port
+        self.incomingUsername = tempAccount.incomingServer?.username ?? defaultUsername
+        self.outgoingUsername = tempAccount.outgoingServer?.username ?? defaultUsername
     }
 
     @Environment(Accounts.self) private var accounts: Accounts
@@ -32,6 +36,8 @@ struct ManualServerSetup: View {
     @State private var incomingPort: Int?
     @State private var outGoingHostname: String
     @State private var outGoingPort: Int?
+    @State private var incomingUsername: String
+    @State private var outgoingUsername: String
     @State private var inSelectedSecurity: Bool
     @State private var outSelectedSecurity: Bool
     @State private var manualConfig: Bool
@@ -44,8 +50,9 @@ struct ManualServerSetup: View {
             if loginDetails.serverProtocol == .jmap {
                 Section(header: Text("account_server_edit_configuration")) {
 
-                    TextEntryWrapper("account_server_settings_server_label", "server.example.com", $incomingHostname)
+                    TextEntryWrapper("account_server_settings_server_label", "api.fastmail.com", $incomingHostname)
                     NumEntryWrapper("account_server_settings_port_label", "443", $incomingPort)
+                    TextEntryWrapper("account_server_settings_username_label", "user@example.com", $incomingUsername)
                     Picker("account_server_settings_authentication_label", selection: $incomingServer.authenticationType) {
                         ForEach(AuthenticationType.allCases) { authentication in
                             Text(authentication.text)
@@ -55,7 +62,7 @@ struct ManualServerSetup: View {
                     AuthorizationView(
                         $incomingServer.authorization,
                         error: $error,
-                        for: incomingServer.username,
+                        for: incomingUsername,
                         authenticationType: incomingServer.authenticationType
                     )
 
@@ -68,21 +75,19 @@ struct ManualServerSetup: View {
             } else {
                 Section(header: Text("account_incoming_server_label")) {
 
-                    TextEntryWrapper("account_server_settings_server_label", "server.example.com", $incomingHostname)
-                    NumEntryWrapper("account_server_settings_port_label", "443", $incomingPort)
+                    TextEntryWrapper("account_server_settings_server_label", "imap.example.com", $incomingHostname)
+                    NumEntryWrapper("account_server_settings_port_label", "993", $incomingPort)
+                    TextEntryWrapper("account_server_settings_username_label", "user@example.com", $incomingUsername)
                     Picker("account_server_settings_authentication_label", selection: $incomingServer.authenticationType) {
                         ForEach(AuthenticationType.allCases) { authentication in
                             Text(authentication.text)
                                 .tag(authentication)
                         }
                     }
-                    .onChange(of: incomingServer.authenticationType, initial: true) {
-
-                    }
                     AuthorizationView(
                         $incomingServer.authorization,
                         error: $error,
-                        for: incomingServer.username,
+                        for: incomingUsername,
                         authenticationType: incomingServer.authenticationType
                     )
                     Toggle("account_server_settings_security_label", isOn: $inSelectedSecurity)
@@ -91,22 +96,19 @@ struct ManualServerSetup: View {
 
                 }
                 Section(header: Text("account_outgoing_server_label")) {
-                    TextEntryWrapper("account_server_settings_server_label", "server.example.com", $outGoingHostname)
-                    NumEntryWrapper("account_server_settings_port_label", "443", $outGoingPort)
-
+                    TextEntryWrapper("account_server_settings_server_label", "smtp.example.com", $outGoingHostname)
+                    NumEntryWrapper("account_server_settings_port_label", "587", $outGoingPort)
+                    TextEntryWrapper("account_server_settings_username_label", "user@example.com", $outgoingUsername)
                     Picker("account_server_settings_authentication_label", selection: $outgoingServer.authenticationType) {
                         ForEach(AuthenticationType.allCases) { authentication in
                             Text(authentication.text)
                                 .tag(authentication)
                         }
                     }
-                    .onChange(of: incomingServer.authenticationType, initial: true) {
-
-                    }
                     AuthorizationView(
                         $outgoingServer.authorization,
                         error: $error,
-                        for: outgoingServer.username,
+                        for: outgoingUsername,
                         authenticationType: outgoingServer.authenticationType
                     )
                     Toggle("account_server_settings_security_label", isOn: $outSelectedSecurity)
@@ -136,13 +138,14 @@ struct ManualServerSetup: View {
                     incomingServer.connectionSecurity = inSelectedSecurity ? ConnectionSecurity.tls : ConnectionSecurity.none
                     incomingServer.hostname = incomingHostname
                     incomingServer.port = incomingPort ?? 443
+                    incomingServer.username = incomingUsername
                     outgoingServer.connectionSecurity = outSelectedSecurity ? ConnectionSecurity.tls : ConnectionSecurity.none
                     outgoingServer.hostname = outGoingHostname
                     outgoingServer.port = outGoingPort ?? 443
+                    outgoingServer.username = outgoingUsername
 
                     if loginDetails.serverProtocol == .jmap {
                         account.servers = [
-                            incomingServer,
                             incomingServer
                         ]
                     } else {
@@ -185,11 +188,6 @@ public extension Server {
             hostname: hostname,
             port: port
         )
-        switch authorization {
-        case .basic(let user, let password): print("basic(user: \(user); password: \(password))")
-        case .oauth(let user, let password): print("oauth(user: \(user); password: \(password))")
-        case .none: print("none")
-        }
         server.authorization = authorization
         return server
     }
@@ -198,7 +196,7 @@ public extension Server {
 private extension AuthenticationType {
     var text: String {
         switch self {
-        case .oAuth2: description
+        case .oAuth2, .apiToken: description
         default: description.capitalized
         }
     }
