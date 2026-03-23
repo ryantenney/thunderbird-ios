@@ -2,7 +2,7 @@ import Foundation
 import OSLog
 
 /// Configure `JMAPClient` with a single ``Server``.
-public class JMAPClient {
+public class JMAPClient: @unchecked Sendable {
 
     /// Convenience
     /// - Parameter server: ``Server`` configuration for JMAP service provider

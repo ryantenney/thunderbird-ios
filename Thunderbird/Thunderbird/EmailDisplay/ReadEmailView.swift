@@ -242,6 +242,6 @@ struct SenderView: View {
             </body></html>
             """
     )
-    let previewAccount = Account.Account(name: "Preview")
+    let previewAccount = Account(name: "Preview")
     ReadEmailView(email, emailService: EmailService(account: previewAccount))
 }

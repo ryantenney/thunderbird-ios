@@ -201,9 +201,9 @@ public struct Email: Decodable, Equatable, Hashable, Identifiable, Sendable {
 }
 
 extension Email {
-    struct GetMethod: Method {
-        struct Configuration {
-            static var allBodyParts: Self {
+    public struct GetMethod: Method {
+        public struct Configuration {
+            public static var allBodyParts: Self {
                 Configuration(
                     bodyProperties: BodyProperty.allCases,
                     fetchTextBodyValues: true,
@@ -218,7 +218,7 @@ extension Email {
             let fetchAllBodyValues: Bool
             let maxBodyValueBytes: Int
 
-            init(
+            public init(
                 bodyProperties: [BodyProperty]? = nil,
                 fetchTextBodyValues: Bool = false,
                 fetchHTMLBodyValues: Bool = false,
@@ -233,11 +233,11 @@ extension Email {
             }
         }
 
-        enum BodyProperty: String, CaseIterable, CustomStringConvertible {
+        public enum BodyProperty: String, CaseIterable, CustomStringConvertible {
             case partID = "partId", blobID = "blobId", size, headers, name, type, charset, disposition, cid, language, location, subParts
 
             // MARK: CustomStringConvertible
-            var description: String { rawValue }
+            public var description: String { rawValue }
         }
 
         let configuration: Configuration?
@@ -274,11 +274,11 @@ extension Email {
         }
 
         // MARK: Method
-        static let name: String = "\(prefix)get"
-        let accountID: String
-        let id: UUID
+        public static let name: String = "\(prefix)get"
+        public let accountID: String
+        public let id: UUID
 
-        var object: [Any] {
+        public var object: [Any] {
             [
                 Self.name,
                 requestObject,

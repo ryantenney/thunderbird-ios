@@ -10,6 +10,12 @@ fastlane/.bundle/
 fastlane/vendor/
 fastlane/Gemfile.lock
 
+# Fastlane signing secrets
+fastlane/.env
+fastlane/api_key.json
+fastlane/*.p8
+fastlane/report.xml
+
 # mdBook
 book/
 

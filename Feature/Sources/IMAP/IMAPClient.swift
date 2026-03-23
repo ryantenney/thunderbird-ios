@@ -6,7 +6,7 @@ import NIOSSL
 import OSLog
 
 /// Configure `IMAPClient` with a single ``Server``.
-public class IMAPClient {
+public class IMAPClient: @unchecked Sendable {
     public let server: Server
 
     public private(set) var capabilities: Set<Capability> = []

@@ -150,7 +150,7 @@ struct EmailListView: View {
 
 #Preview("Email List") {
     @Previewable @State var accounts: Accounts = Accounts()
-    let previewAccount = Account.Account(name: "Preview")
+    let previewAccount = Account(name: "Preview")
     EmailListView(emailService: EmailService(account: previewAccount))
         .environment(accounts)
 }

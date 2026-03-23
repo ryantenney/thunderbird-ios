@@ -28,7 +28,7 @@ extension [FetchAttribute] {
     }
 
     // Standard set of fetch attributes supported by all IMAP4 servers
-    static var standard: Self {
+    public static var standard: Self {
         [
             .envelope,
             .flags,
