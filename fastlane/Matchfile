@@ -1,0 +1,8 @@
+git_url(ENV["MATCH_GIT_URL"])
+storage_mode("git")
+
+type("development")
+
+app_identifier([ENV["APP_IDENTIFIER"] || "net.thunderbird.ios"])
+
+api_key_path("fastlane/api_key.json")

@@ -42,20 +42,76 @@ platform :ios do
     )
   end
 
+  desc "Set up App IDs and provisioning profiles via match"
+  lane :signing do
+    api_key = app_store_connect_api_key(
+      key_id: "2PNW542P28",
+      issuer_id: "69a6de8c-6b42-47e3-e053-5b8c7c11a4d1",
+      key_filepath: File.join(Dir.pwd, "AuthKey_2PNW542P28.p8")
+    )
+    app_id = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
+
+    # Register App ID on Developer Portal via ASC API
+    token = Spaceship::ConnectAPI::Token.create(**api_key)
+    Spaceship::ConnectAPI.token = token
+    existing = Spaceship::ConnectAPI::BundleId.find(app_id)
+    if existing
+      UI.success("App ID '#{app_id}' already exists")
+    else
+      Spaceship::ConnectAPI::BundleId.create(
+        name: "Thunderbird",
+        identifier: app_id,
+        platform: Spaceship::ConnectAPI::BundleIdPlatform::IOS
+      )
+      UI.success("Created App ID '#{app_id}'")
+    end
+
+    match(type: "development")
+    match(type: "appstore")
+  end
+
+  desc "Build and run on a connected iOS device"
+  lane :device do
+    device_name = ENV["DEVICE_NAME"] || "iPhone"
+    app_id = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
+    match(type: "development")
+    profile_name = ENV["sigh_#{app_id}_development_profile-name"]
+    team_id = ENV["sigh_#{app_id}_development_team-id"]
+
+    update_code_signing_settings(
+      path: "Thunderbird/Thunderbird.xcodeproj",
+      use_automatic_signing: false,
+      team_id: team_id,
+      bundle_identifier: app_id,
+      profile_name: profile_name,
+      code_sign_identity: "iPhone Developer"
+    )
+
+    xcodebuild(
+      scheme: "Thunderbird",
+      workspace: "Thunderbird.xcworkspace",
+      destination: "platform=iOS,name=#{device_name}",
+      build: true,
+      xcargs: "PRODUCT_BUNDLE_IDENTIFIER='#{app_id}'"
+    )
+
+    # Find the built .app and install on device
+    app_path = Dir.glob(File.expand_path("~/Library/Developer/Xcode/DerivedData/Thunderbird-*/Build/Products/Debug-iphoneos/Thunderbird.app")).first
+    UI.user_error!("Could not find built Thunderbird.app") unless app_path
+    sh("xcrun devicectl device install app --device '#{device_name}' '#{app_path}'")
+  end
+
   desc "Build and upload to TestFlight"
   lane :beta do
-    # Ensure no uncommited changes
     ensure_git_status_clean
 
-    # Run tests
     run_tests(
       scheme: "Thunderbird",
       workspace: "Thunderbird.xcworkspace",
-      destination: "platform=iOS Simulator,name=#{ENV['TEST_DEVICE']}",
+      destination: "platform=iOS Simulator,name=#{ENV['TEST_DEVICE'] || 'iPhone 16'}",
       code_coverage: true
     )
 
-    # Set version if provided via workflow input
     if ENV["VERSION_INPUT"] && !ENV["VERSION_INPUT"].empty?
       puts "Setting version to: #{ENV['VERSION_INPUT']}"
       increment_version_number(
@@ -64,57 +120,29 @@ platform :ios do
       )
     end
 
-    # Set development team before building
-    if ENV["APPLE_TEAM_ID"] && !ENV["APPLE_TEAM_ID"].empty?
-      update_project_team(
-        path: "Thunderbird/Thunderbird.xcodeproj",
-        teamid: ENV["APPLE_TEAM_ID"]
-      )
-    end
-
-    # Set provisioning profile
-    profile_path = Dir.glob(File.expand_path("~/Library/MobileDevice/Provisioning Profiles/*.mobileprovision")).first
-    if profile_path
-      update_project_provisioning(
-        xcodeproj: "Thunderbird/Thunderbird.xcodeproj",
-        profile: profile_path,
-        target_filter: "Thunderbird"
-      )
-    end
-
-    # Set build number using timestamp (YYYYMMDDHHmm format)
     build_number = Time.now.utc.strftime("%Y%m%d%H%M")
     increment_build_number(
       build_number: build_number,
       xcodeproj: "Thunderbird/Thunderbird.xcodeproj"
     )
 
-    # Build the app
+    match(type: "appstore")
+
     build_app(
       scheme: "Thunderbird",
       workspace: "Thunderbird.xcworkspace",
-      sdk: "iphoneos",
-      destination: "generic/platform=iOS",
       export_method: "app-store",
       export_options: {
-        method: "app-store",
-        teamID: ENV["APPLE_TEAM_ID"],
-        provisioningProfiles: {
-          "net.thunderbird.ios" => ENV["PROVISIONING_PROFILE_NAME"]
-        },
-        signingStyle: "manual",
         uploadBitcode: false,
         uploadSymbols: true,
         compileBitcode: false
       }
     )
 
-    # Upload to TestFlight
-    key_path = ENV["APP_STORE_CONNECT_API_KEY_PATH"]
     api_key = app_store_connect_api_key(
-      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
-      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-      key_filepath: key_path
+      key_id: "2PNW542P28",
+      issuer_id: "69a6de8c-6b42-47e3-e053-5b8c7c11a4d1",
+      key_filepath: File.join(Dir.pwd, "AuthKey_2PNW542P28.p8")
     )
     upload_to_testflight(
       api_key: api_key,
@@ -130,18 +158,15 @@ platform :ios do
 
   desc "Build for App Store release"
   lane :release do
-    # Ensure no uncommited changes
     ensure_git_status_clean
 
-    # Run tests
     run_tests(
       scheme: "Thunderbird",
       workspace: "Thunderbird.xcworkspace",
-      destination: "platform=iOS Simulator,name=#{ENV['TEST_DEVICE']}",
+      destination: "platform=iOS Simulator,name=#{ENV['TEST_DEVICE'] || 'iPhone 16'}",
       code_coverage: true
     )
 
-    # Set version if provided via workflow input
     if ENV["VERSION_INPUT"] && !ENV["VERSION_INPUT"].empty?
       puts "Setting version to: #{ENV['VERSION_INPUT']}"
       increment_version_number(
@@ -150,55 +175,29 @@ platform :ios do
       )
     end
 
-    # Set development team before building
-    if ENV["APPLE_TEAM_ID"] && !ENV["APPLE_TEAM_ID"].empty?
-      update_project_team(
-        path: "Thunderbird/Thunderbird.xcodeproj",
-        teamid: ENV["APPLE_TEAM_ID"]
-      )
-    end
-
-    # Set provisioning profile
-    profile_path = Dir.glob(File.expand_path("~/Library/MobileDevice/Provisioning Profiles/*.mobileprovision")).first
-    if profile_path
-      update_project_provisioning(
-        xcodeproj: "Thunderbird/Thunderbird.xcodeproj",
-        profile: profile_path,
-        target_filter: "Thunderbird"
-      )
-    end
-
-    # Set build number using timestamp (YYYYMMDDHHmm format)
     build_number = Time.now.utc.strftime("%Y%m%d%H%M")
     increment_build_number(
       build_number: build_number,
       xcodeproj: "Thunderbird/Thunderbird.xcodeproj"
     )
 
-    # Build the app
+    match(type: "appstore")
+
     build_app(
       scheme: "Thunderbird",
       workspace: "Thunderbird.xcworkspace",
       export_method: "app-store",
       export_options: {
-        method: "app-store",
-        teamID: ENV["APPLE_TEAM_ID"],
-        provisioningProfiles: {
-          "net.thunderbird.ios" => ENV["PROVISIONING_PROFILE_NAME"]
-        },
-        signingStyle: "manual",
         uploadBitcode: false,
         uploadSymbols: true,
         compileBitcode: false
       }
     )
 
-    # Upload to App Store Connect for review
-    key_path = ENV["APP_STORE_CONNECT_API_KEY_PATH"]
     api_key = app_store_connect_api_key(
-      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
-      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-      key_filepath: key_path
+      key_id: "2PNW542P28",
+      issuer_id: "69a6de8c-6b42-47e3-e053-5b8c7c11a4d1",
+      key_filepath: File.join(Dir.pwd, "AuthKey_2PNW542P28.p8")
     )
     upload_to_app_store(
       api_key: api_key,
