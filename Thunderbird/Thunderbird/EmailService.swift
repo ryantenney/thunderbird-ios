@@ -69,8 +69,11 @@ class EmailService {
 
     private func doFetchInbox() async throws {
         guard let server = account.incomingServer else {
+            logger.error("No incoming server configured for account '\(self.account.name)'")
             throw EmailServiceError.noIncomingServer
         }
+
+        logger.info("Fetching inbox: protocol=\(server.serverProtocol.rawValue) host=\(server.hostname) port=\(server.port)")
 
         switch server.serverProtocol {
         case .jmap:
@@ -146,10 +149,13 @@ class EmailService {
     private func mapJMAPAuthorization(_ auth: AccountAuthorization) -> JMAP.Authorization {
         switch auth {
         case .basic(let user, let password):
+            logger.debug("Auth: basic user=\(user) password=\(password.isEmpty ? "empty" : "present")")
             return .basic(user, password)
         case .oauth(_, let token):
+            logger.debug("Auth: oauth token=\(token.description.isEmpty ? "empty" : "present (\(token.description.prefix(8))...)")")
             return .bearer(token.description)
         case .none:
+            logger.warning("Auth: none — credentials missing")
             return .empty
         }
     }
@@ -157,18 +163,24 @@ class EmailService {
     // MARK: IMAP
 
     private func fetchIMAPInbox(server: AccountServer) async throws {
+        logger.info("IMAP connecting to \(server.hostname):\(server.port)")
         let client = try makeIMAPClient(from: server)
         self.mailClient = .imap(client)
 
         try await client.connect()
+        logger.debug("IMAP connected, logging in...")
         try await client.login()
+        logger.debug("IMAP logged in, listing mailboxes...")
 
         let mailboxes = try await client.list()
+        logger.debug("IMAP found \(mailboxes.count) mailboxes")
         guard let inbox = mailboxes.first(where: { $0.path.name.isInbox }) else {
+            logger.error("IMAP inbox mailbox not found")
             throw EmailServiceError.inboxNotFound
         }
 
         try await client.select(mailbox: inbox)
+        logger.debug("IMAP selected inbox, fetching messages...")
 
         let messageSet = try await client.fetch(
             attributes: .standard  // .envelope, .flags, .uid
@@ -235,8 +247,10 @@ class EmailService {
 
     private func shouldRetry(_ error: Error) -> Bool {
         if let urlError = error as? URLError {
-            return [.networkConnectionLost, .timedOut, .notConnectedToInternet]
+            let retryable: Bool = [.networkConnectionLost, .timedOut, .notConnectedToInternet]
                 .contains(urlError.code)
+            logger.debug("URLError \(urlError.code.rawValue) (\(urlError.localizedDescription)) — \(retryable ? "will retry" : "not retryable")")
+            return retryable
         }
         if let imapError = error as? IMAPError {
             switch imapError {

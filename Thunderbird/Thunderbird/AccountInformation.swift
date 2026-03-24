@@ -66,11 +66,11 @@ struct AccountInformation: View {
                         authenticationType: loginServer.authenticationType
                     ).onChange(of: loginServer.authorization) {
                         guard var account = account else { return }
-                        var incomingServerInfo = account.incomingServer?.clone() ?? Server(.imap)
-                        var outgoingServerInfo = account.outgoingServer?.clone() ?? Server(.smtp)
-                        incomingServerInfo.authorization = loginServer.authorization
-                        outgoingServerInfo.authorization = loginServer.authorization
-                        account.servers = [incomingServerInfo, outgoingServerInfo]
+                        // Use loginServer directly — it has the correct UUID and the
+                        // authorization was already stored by the binding setter above.
+                        var outgoingServer = account.outgoingServer?.clone() ?? Server(.smtp)
+                        outgoingServer.authorization = loginServer.authorization
+                        account.servers = [loginServer, outgoingServer]
                         accounts.set(account)
                     }
                 }

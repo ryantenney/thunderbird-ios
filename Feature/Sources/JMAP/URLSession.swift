@@ -1,4 +1,7 @@
 import Foundation
+import OSLog
+
+private let logger = Logger(subsystem: "net.thunderbird", category: "JMAP.HTTP")
 
 extension URLSession {
 
@@ -8,7 +11,19 @@ extension URLSession {
     /// - Parameter authorization: ``Authorization`` credentials or token for request header
     /// - Returns: ``MethodResponse``
     public func jmapAPI(_ methods: [any Method], url: URL, authorization: Authorization) async throws -> [any MethodResponse] {
-        let data: Data = try await data(for: try .jmapAPI(methods, url: url, authorization: authorization)).0
+        let methodNames = methods.map { type(of: $0).name }.joined(separator: ", ")
+        logger.debug("API request: \(url) methods=[\(methodNames)]")
+        let response: (Data, URLResponse)
+        do {
+            response = try await data(for: try .jmapAPI(methods, url: url, authorization: authorization))
+        } catch {
+            logger.error("API request failed: \(url) error=\(error)")
+            throw error
+        }
+        if let httpResponse = response.1 as? HTTPURLResponse {
+            logger.debug("API response: \(url) status=\(httpResponse.statusCode) bytes=\(response.0.count)")
+        }
+        let data: Data = response.0
         let object: Any = try JSONSerialization.jsonObject(with: data)
 
         // Unwrap and map responses from "envelope" array
@@ -94,13 +109,29 @@ extension URLSession {
     /// - Parameter authorization: ``Authorization`` credentials or token for request header
     /// - Returns: ``Session`` object containing available account(s), capabilities and service URLs
     public func jmapSession(host: String, port: Int? = nil, authorization: Authorization) async throws -> Session {
-        let response: (Data, URLResponse) = try await data(for: try .jmapSession(host: host, port: port, authorization: authorization))
-        switch (response.1 as? HTTPURLResponse)?.statusCode {
+        let url = try URL.jmapSession(host: host, port: port)
+        logger.debug("Session request: \(url) auth=\(authorization.label) empty=\(authorization.isEmpty)")
+        let response: (Data, URLResponse)
+        do {
+            response = try await data(for: try .jmapSession(host: host, port: port, authorization: authorization))
+        } catch {
+            logger.error("Session request failed: \(url) error=\(error)")
+            throw error
+        }
+        let statusCode = (response.1 as? HTTPURLResponse)?.statusCode
+        logger.debug("Session response: \(url) status=\(statusCode ?? -1) bytes=\(response.0.count)")
+        switch statusCode {
         case 401:
+            logger.error("Session auth rejected (401): \(url)")
             throw URLError(.userAuthenticationRequired)
         default:
-            let session: Session = try JSONDecoder().decode(Session.self, from: response.0)
-            return session
+            do {
+                let session: Session = try JSONDecoder().decode(Session.self, from: response.0)
+                return session
+            } catch {
+                logger.error("Session decode failed: \(error) body=\(String(data: response.0.prefix(500), encoding: .utf8) ?? "<binary>")")
+                throw error
+            }
         }
     }
 }

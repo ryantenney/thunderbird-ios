@@ -43,6 +43,8 @@ struct ManualServerSetup: View {
     @State private var manualConfig: Bool
     @State private var account: Account
     @State private var error: Error?
+    @State private var incomingAuth: Authorization = .none
+    @State private var outgoingAuth: Authorization = .none
 
     // MARK: View
     var body: some View {
@@ -60,7 +62,7 @@ struct ManualServerSetup: View {
                         }
                     }
                     AuthorizationView(
-                        $incomingServer.authorization,
+                        $incomingAuth,
                         error: $error,
                         for: incomingUsername,
                         authenticationType: incomingServer.authenticationType
@@ -85,7 +87,7 @@ struct ManualServerSetup: View {
                         }
                     }
                     AuthorizationView(
-                        $incomingServer.authorization,
+                        $incomingAuth,
                         error: $error,
                         for: incomingUsername,
                         authenticationType: incomingServer.authenticationType
@@ -106,7 +108,7 @@ struct ManualServerSetup: View {
                         }
                     }
                     AuthorizationView(
-                        $outgoingServer.authorization,
+                        $outgoingAuth,
                         error: $error,
                         for: outgoingUsername,
                         authenticationType: outgoingServer.authenticationType
@@ -139,10 +141,13 @@ struct ManualServerSetup: View {
                     incomingServer.hostname = incomingHostname
                     incomingServer.port = incomingPort ?? 443
                     incomingServer.username = incomingUsername
+                    incomingServer.authorization = incomingAuth
+
                     outgoingServer.connectionSecurity = outSelectedSecurity ? ConnectionSecurity.tls : ConnectionSecurity.none
                     outgoingServer.hostname = outGoingHostname
                     outgoingServer.port = outGoingPort ?? 443
                     outgoingServer.username = outgoingUsername
+                    outgoingServer.authorization = outgoingAuth
 
                     if loginDetails.serverProtocol == .jmap {
                         account.servers = [
@@ -186,7 +191,8 @@ public extension Server {
             authenticationType: authenticationType,
             username: username,
             hostname: hostname,
-            port: port
+            port: port,
+            id: id
         )
         server.authorization = authorization
         return server

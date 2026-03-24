@@ -51,6 +51,7 @@ public class JMAPClient: @unchecked Sendable {
             guard let id: String = session.accounts.keys.first else {
                 throw JMAPError.method(.accountNotFound)
             }
+            logger?.debug("Querying emails in mailbox \(mailbox.name ?? mailbox.id)")
             guard
                 let response: MethodQueryResponse = try await URLSession.shared.jmapAPI(
                     [
@@ -60,6 +61,7 @@ public class JMAPClient: @unchecked Sendable {
             else {
                 throw JMAPError.underlying(URLError(.cannotDecodeContentData))
             }
+            logger?.info("Query returned \(response.ids.count) email IDs (total: \(response.total))")
             return try await emails(response.ids)
         } else {
             try await session()
@@ -93,6 +95,7 @@ public class JMAPClient: @unchecked Sendable {
             guard let id: String = session.accounts.keys.first else {
                 throw JMAPError.method(.accountNotFound)
             }
+            logger?.debug("Fetching mailboxes for account \(id)")
             guard
                 let response: MethodGetResponse = try await URLSession.shared.jmapAPI(
                     [
@@ -102,7 +105,9 @@ public class JMAPClient: @unchecked Sendable {
             else {
                 throw JMAPError.underlying(URLError(.cannotDecodeContentData))
             }
-            return try response.decode([Mailbox].self)
+            let mailboxes = try response.decode([Mailbox].self)
+            logger?.info("Fetched \(mailboxes.count) mailboxes")
+            return mailboxes
         } else {
             try await session()
             return try await mailboxes()
@@ -110,9 +115,16 @@ public class JMAPClient: @unchecked Sendable {
     }
 
     @discardableResult public func session() async throws -> Session {
-        let session: Session = try await URLSession.shared.jmapSession(server: server)
-        self.session = session
-        return session
+        logger?.info("Starting JMAP session: host=\(self.server.host), port=\(self.server.port), auth=\(self.server.authorization?.label ?? "none"), empty=\(self.server.authorization?.isEmpty ?? true)")
+        do {
+            let session: Session = try await URLSession.shared.jmapSession(server: server)
+            self.session = session
+            logger?.info("Session established: user=\(session.username), accounts=\(session.accounts.count), apiURL=\(session.apiURL)")
+            return session
+        } catch {
+            logger?.error("Session failed: \(error)")
+            throw error
+        }
     }
 
     required public init(

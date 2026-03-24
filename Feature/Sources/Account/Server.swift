@@ -30,11 +30,14 @@ public struct Server: Codable, Equatable, Hashable, Identifiable {
 
     public var authorization: Authorization {
         set {  // Swap in keychain-specific user name
+            guard !username.isEmpty else { return }  // Don't store credentials without a username
             let authorization: Authorization = Authorization(user: user, password: newValue.password)
             URLCredentialStorage.shared.set(authorization: authorization, persistence: .permanent)
         }
         get {
-            guard let authorization: Authorization = URLCredentialStorage.shared.authorization(for: user) else {
+            guard !username.isEmpty,
+                  let authorization: Authorization = URLCredentialStorage.shared.authorization(for: user)
+            else {
                 return .none
             }
             return Authorization(user: username, password: authorization.password)  // Swap out keychain-specific user name

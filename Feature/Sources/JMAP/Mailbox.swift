@@ -3,7 +3,7 @@ import Foundation
 /// Mailboxes are the primary mechanism for organizing ``Email`` within an ``Account``, part of [JMAP mail.](https://jmap.io/spec-mail.html#mailboxes)
 public struct Mailbox: CustomStringConvertible, Decodable, Equatable, Hashable, Identifiable, Sendable {
     public enum Role: String, CaseIterable, CustomStringConvertible, Decodable, Identifiable, Sendable {
-        case inbox, archive, drafts, sent, junk, trash
+        case inbox, archive, drafts, sent, junk, trash, scheduled
 
         // MARK: CustomStringConvertible
         public var description: String { rawValue }
@@ -70,6 +70,27 @@ public struct Mailbox: CustomStringConvertible, Decodable, Equatable, Hashable, 
         self.isSubscribed = isSubscribed
         myRights = Rights()
         self.id = id
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        parentID = try container.decodeIfPresent(String.self, forKey: .parentID)
+        // Decode role as nil for unknown values instead of failing
+        role = try? container.decodeIfPresent(Role.self, forKey: .role)
+        sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
+        totalEmails = try container.decodeIfPresent(Int.self, forKey: .totalEmails) ?? 0
+        totalThreads = try container.decodeIfPresent(Int.self, forKey: .totalThreads) ?? 0
+        unreadEmails = try container.decodeIfPresent(Int.self, forKey: .unreadEmails) ?? 0
+        unreadThreads = try container.decodeIfPresent(Int.self, forKey: .unreadThreads) ?? 0
+        isSubscribed = try container.decodeIfPresent(Bool.self, forKey: .isSubscribed) ?? false
+        myRights = try container.decodeIfPresent(Rights.self, forKey: .myRights) ?? Rights()
+        id = try container.decode(String.self, forKey: .id)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case name, parentID = "parentId", role, sortOrder, totalEmails, totalThreads
+        case unreadEmails, unreadThreads, isSubscribed, myRights, id
     }
 
     let myRights: Rights

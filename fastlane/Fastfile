@@ -17,7 +17,7 @@ platform :ios do
   lane :test do
     device = ENV["TEST_DEVICE"] || "iPhone 16"
     run_tests(
-      scheme: "Thunderbird",
+      scheme: "Thunderbird_iOS",
       workspace: "Thunderbird.xcworkspace",
       destination: "platform=iOS Simulator,name=#{device}",
       code_coverage: true,
@@ -33,7 +33,7 @@ platform :ios do
   desc "Clean build without signing (compilation check)"
   lane :build do
     xcodebuild(
-      scheme: "Thunderbird",
+      scheme: "Thunderbird_iOS",
       workspace: "Thunderbird.xcworkspace",
       destination: "generic/platform=iOS Simulator",
       build: true,
@@ -88,7 +88,7 @@ platform :ios do
     )
 
     xcodebuild(
-      scheme: "Thunderbird",
+      scheme: "Thunderbird_iOS",
       workspace: "Thunderbird.xcworkspace",
       destination: "platform=iOS,name=#{device_name}",
       build: true,
@@ -106,7 +106,7 @@ platform :ios do
     ensure_git_status_clean
 
     run_tests(
-      scheme: "Thunderbird",
+      scheme: "Thunderbird_iOS",
       workspace: "Thunderbird.xcworkspace",
       destination: "platform=iOS Simulator,name=#{ENV['TEST_DEVICE'] || 'iPhone 16'}",
       code_coverage: true
@@ -129,7 +129,7 @@ platform :ios do
     match(type: "appstore")
 
     build_app(
-      scheme: "Thunderbird",
+      scheme: "Thunderbird_iOS",
       workspace: "Thunderbird.xcworkspace",
       export_method: "app-store",
       export_options: {
@@ -161,7 +161,7 @@ platform :ios do
     ensure_git_status_clean
 
     run_tests(
-      scheme: "Thunderbird",
+      scheme: "Thunderbird_iOS",
       workspace: "Thunderbird.xcworkspace",
       destination: "platform=iOS Simulator,name=#{ENV['TEST_DEVICE'] || 'iPhone 16'}",
       code_coverage: true
@@ -184,7 +184,7 @@ platform :ios do
     match(type: "appstore")
 
     build_app(
-      scheme: "Thunderbird",
+      scheme: "Thunderbird_iOS",
       workspace: "Thunderbird.xcworkspace",
       export_method: "app-store",
       export_options: {
