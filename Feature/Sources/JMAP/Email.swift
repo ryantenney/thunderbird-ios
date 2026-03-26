@@ -139,6 +139,7 @@ public struct Email: Decodable, Equatable, Hashable, Identifiable, Sendable {
     public let attachments: [BodyPart]
     public let hasAttachment: Bool
     public let preview: String?
+    public let aiAnalysis: AIAnalysis?
 
     /// HTML body content extracted from `bodyValues`, if available.
     public var htmlContent: String? {
@@ -175,11 +176,23 @@ public struct Email: Decodable, Equatable, Hashable, Identifiable, Sendable {
         subject = try container.decodeIfPresent(String.self, forKey: .subject)
         bodyStructure = try container.decodeIfPresent(BodyPart.self, forKey: .bodyStructure)
         bodyValues = try container.decodeIfPresent([String: BodyValue].self, forKey: .bodyValues) ?? [:]
-        textBody = try container.decode([BodyPart].self, forKey: .textBody)
-        htmlBody = try container.decode([BodyPart].self, forKey: .htmlBody)
-        attachments = try container.decode([BodyPart].self, forKey: .attachments)
-        hasAttachment = try container.decode(Bool.self, forKey: .hasAttachment)
-        preview = try container.decode(String.self, forKey: .preview)
+        textBody = try container.decodeIfPresent([BodyPart].self, forKey: .textBody) ?? []
+        htmlBody = try container.decodeIfPresent([BodyPart].self, forKey: .htmlBody) ?? []
+        attachments = try container.decodeIfPresent([BodyPart].self, forKey: .attachments) ?? []
+        hasAttachment = try container.decodeIfPresent(Bool.self, forKey: .hasAttachment) ?? false
+        preview = try container.decodeIfPresent(String.self, forKey: .preview)
+
+        // Decode AI analysis from vendor extension property keyed by capability URI
+        let dynamicContainer = try decoder.container(keyedBy: DynamicKey.self)
+        aiAnalysis = try dynamicContainer.decodeIfPresent(AIAnalysis.self, forKey: DynamicKey(Capability.Key.mailIndexAI.rawValue))
+    }
+
+    private struct DynamicKey: CodingKey {
+        var stringValue: String
+        var intValue: Int? { nil }
+        init(_ stringValue: String) { self.stringValue = stringValue }
+        init?(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { nil }
     }
 
     private enum Key: CodingKey {
@@ -242,8 +255,11 @@ extension Email {
 
         let configuration: Configuration?
         let ids: [String]
+        let extraCapabilities: [Capability.Key]
 
-        init(_ accountID: String, ids: [String], configuration: Configuration? = nil, id: UUID = UUID()) throws {
+        public var using: [Capability.Key] { [.core, .mail] + extraCapabilities }
+
+        init(_ accountID: String, ids: [String], configuration: Configuration? = nil, extraCapabilities: [Capability.Key] = [], id: UUID = UUID()) throws {
             guard !accountID.isEmpty else {
                 throw MethodError.accountNotFound
             }
@@ -253,6 +269,7 @@ extension Email {
             self.accountID = accountID
             self.ids = ids
             self.configuration = configuration
+            self.extraCapabilities = extraCapabilities
             self.id = id
         }
 
@@ -291,8 +308,11 @@ extension Email {
         let filter: Filter?
         let collapseThreads: Bool
         let calculateTotal: Bool
+        let extraCapabilities: [Capability.Key]
 
-        init(_ accountID: String, filter: Filter? = nil, collapseThreads: Bool = false, calculateTotal: Bool = false, id: UUID = UUID()) throws {
+        var using: [Capability.Key] { [.core, .mail] + extraCapabilities }
+
+        init(_ accountID: String, filter: Filter? = nil, collapseThreads: Bool = false, calculateTotal: Bool = false, extraCapabilities: [Capability.Key] = [], id: UUID = UUID()) throws {
             guard !accountID.isEmpty else {
                 throw MethodError.accountNotFound
             }
@@ -300,6 +320,7 @@ extension Email {
             self.filter = filter
             self.collapseThreads = collapseThreads
             self.calculateTotal = calculateTotal
+            self.extraCapabilities = extraCapabilities
             self.id = id
         }
 

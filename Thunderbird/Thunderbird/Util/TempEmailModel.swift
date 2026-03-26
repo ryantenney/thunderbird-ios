@@ -22,6 +22,25 @@ struct DisplayEmail: Hashable, Identifiable {
     let threadId: String?
     /// HTML body content, populated lazily when the user opens the email.
     var htmlBody: String?
+
+    // MARK: AI Analysis
+    var aiSummary: String? = nil
+    var aiCategories: [String]? = nil
+    var aiImportance: Double? = nil
+    var aiSentiment: String? = nil
+    var aiRequiresAction: Bool? = nil
+    var aiActionItems: [AIActionItem]? = nil
+    var aiKeyDates: [AIKeyDate]? = nil
+}
+
+struct AIActionItem: Hashable {
+    let description: String
+    let deadline: String?
+}
+
+struct AIKeyDate: Hashable {
+    let date: String
+    let description: String
 }
 
 import SwiftData

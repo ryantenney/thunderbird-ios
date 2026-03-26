@@ -101,19 +101,19 @@ extension URLSession {
     /// - Parameter server: ``Server`` configuration for JMAP service provider
     /// - Returns: ``Session`` object containing available account(s), capabilities and service URLs
     public func jmapSession(server: Server) async throws -> Session {
-        try await jmapSession(host: server.host, port: server.port, authorization: server.authorization ?? .empty)
+        try await jmapSession(host: server.host, port: server.port, scheme: server.scheme, authorization: server.authorization ?? .empty)
     }
 
     /// Get JMAP session object from a service provider.
     /// - Parameter host: Host name of the JMAP service provider; e.g., `api.fastmail.com`
     /// - Parameter authorization: ``Authorization`` credentials or token for request header
     /// - Returns: ``Session`` object containing available account(s), capabilities and service URLs
-    public func jmapSession(host: String, port: Int? = nil, authorization: Authorization) async throws -> Session {
-        let url = try URL.jmapSession(host: host, port: port)
+    public func jmapSession(host: String, port: Int? = nil, scheme: String = "https", authorization: Authorization) async throws -> Session {
+        let url = try URL.jmapSession(host: host, port: port, scheme: scheme)
         logger.debug("Session request: \(url) auth=\(authorization.label) empty=\(authorization.isEmpty)")
         let response: (Data, URLResponse)
         do {
-            response = try await data(for: try .jmapSession(host: host, port: port, authorization: authorization))
+            response = try await data(for: try .jmapSession(host: host, port: port, scheme: scheme, authorization: authorization))
         } catch {
             logger.error("Session request failed: \(url) error=\(error)")
             throw error

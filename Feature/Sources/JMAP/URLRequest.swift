@@ -29,18 +29,18 @@ extension URLRequest {
     /// - Parameter server: ``Server`` configuration for JMAP service provider
     /// - Returns: `URLRequest` configured to GET an authenticated session with a JMAP service provider
     public static func jmapSession(server: Server) throws -> Self {
-        try jmapSession(host: server.host, port: server.port, authorization: server.authorization ?? .empty)
+        try jmapSession(host: server.host, port: server.port, scheme: server.scheme, authorization: server.authorization ?? .empty)
     }
 
     /// Request JMAP session object from a service provider.
     /// - Parameter host: Host name of the JMAP service provider; e.g., `api.fastmail.com`
     /// - Parameter authorization: ``Authorization`` credentials or token for request header
     /// - Returns: `URLRequest` configured to GET an authenticated session with a JMAP service provider
-    public static func jmapSession(host: String, port: Int? = nil, authorization: Authorization) throws -> Self {
+    public static func jmapSession(host: String, port: Int? = nil, scheme: String = "https", authorization: Authorization) throws -> Self {
         guard !authorization.isEmpty else {
             throw URLError(.userAuthenticationRequired)
         }
-        var request: Self = Self(url: try .jmapSession(host: host, port: port))
+        var request: Self = Self(url: try .jmapSession(host: host, port: port, scheme: scheme))
         request.setJMAPHeaders(authorization: authorization)
         return request
     }

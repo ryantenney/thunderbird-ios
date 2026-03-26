@@ -35,6 +35,25 @@ struct ReadEmailView: View {
                 ScrollView {
                     VStack(alignment: .leading) {
                         SenderView(email.sender, email.date, email.recipients)
+
+                        // AI Analysis card
+                        if email.aiSummary != nil || email.aiCategories != nil {
+                            AISummaryCard(email: email)
+                                .padding(.top, 8)
+                        }
+
+                        // Action Items
+                        if let items = email.aiActionItems, !items.isEmpty {
+                            AIActionItemsView(items: items)
+                                .padding(.top, 4)
+                        }
+
+                        // Key Dates
+                        if let dates = email.aiKeyDates, !dates.isEmpty {
+                            AIKeyDatesView(dates: dates)
+                                .padding(.top, 4)
+                        }
+
                         if isLoadingBody {
                             ProgressView("Loading email…")
                                 .frame(maxWidth: .infinity, alignment: .center)
@@ -220,6 +239,176 @@ struct SenderView: View {
             }
 
         }
+    }
+}
+
+// MARK: - AI Summary Card
+
+struct AISummaryCard: View {
+    let email: DisplayEmail
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 4) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(.purple)
+                Text("AI Summary")
+                    .font(.subheadline.bold())
+                Spacer()
+                if let importance = email.aiImportance {
+                    ImportanceBadge(importance: importance)
+                }
+                if let sentiment = email.aiSentiment {
+                    SentimentBadge(sentiment: sentiment)
+                }
+            }
+
+            if let summary = email.aiSummary {
+                Text(summary)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+            }
+
+            if let categories = email.aiCategories, !categories.isEmpty {
+                HStack(spacing: 4) {
+                    ForEach(categories, id: \.self) { category in
+                        CategoryPill(category)
+                    }
+                }
+            }
+
+            if email.aiRequiresAction == true {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .foregroundStyle(.red)
+                    Text("Action required")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+}
+
+struct ImportanceBadge: View {
+    let importance: Double
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Image(systemName: importance >= 0.8 ? "flame.fill" : "flame")
+                .font(.caption)
+            Text(label)
+                .font(.caption2)
+        }
+        .foregroundStyle(color)
+    }
+
+    private var label: String {
+        if importance >= 0.8 { return "High" }
+        if importance >= 0.5 { return "Normal" }
+        return "Low"
+    }
+
+    private var color: Color {
+        if importance >= 0.8 { return .orange }
+        if importance >= 0.5 { return .secondary }
+        return .gray
+    }
+}
+
+struct SentimentBadge: View {
+    let sentiment: String
+
+    var body: some View {
+        Text(icon)
+            .font(.caption)
+    }
+
+    private var icon: String {
+        switch sentiment {
+        case "positive": return "+"
+        case "negative": return "-"
+        default: return ""
+        }
+    }
+}
+
+// MARK: - AI Action Items
+
+struct AIActionItemsView: View {
+    let items: [AIActionItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Image(systemName: "checklist")
+                    .foregroundStyle(.blue)
+                Text("Action Items")
+                    .font(.subheadline.bold())
+            }
+
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "circle")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.description)
+                            .font(.body)
+                        if let deadline = item.deadline {
+                            Text(deadline)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.secondarySystemBackground))
+        )
+    }
+}
+
+// MARK: - AI Key Dates
+
+struct AIKeyDatesView: View {
+    let dates: [AIKeyDate]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Image(systemName: "calendar")
+                    .foregroundStyle(.blue)
+                Text("Key Dates")
+                    .font(.subheadline.bold())
+            }
+
+            ForEach(Array(dates.enumerated()), id: \.offset) { _, keyDate in
+                HStack(alignment: .top, spacing: 8) {
+                    Text(keyDate.date)
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .frame(width: 80, alignment: .leading)
+                    Text(keyDate.description)
+                        .font(.body)
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.secondarySystemBackground))
+        )
     }
 }
 

@@ -55,7 +55,7 @@ public class JMAPClient: @unchecked Sendable {
             guard
                 let response: MethodQueryResponse = try await URLSession.shared.jmapAPI(
                     [
-                        Email.QueryMethod(id, filter: .inMailbox(mailbox.id))
+                        Email.QueryMethod(id, filter: .inMailbox(mailbox.id), extraCapabilities: extraCapabilities)
                     ], url: session.apiURL, authorization: server.authorization!
                 ).first as? MethodQueryResponse
             else {
@@ -77,7 +77,7 @@ public class JMAPClient: @unchecked Sendable {
             guard
                 let response: MethodGetResponse = try await URLSession.shared.jmapAPI(
                     [
-                        Email.GetMethod(id, ids: ids, configuration: configuration)
+                        Email.GetMethod(id, ids: ids, configuration: configuration, extraCapabilities: extraCapabilities)
                     ], url: session.apiURL, authorization: server.authorization!
                 ).first as? MethodGetResponse
             else {
@@ -137,6 +137,15 @@ public class JMAPClient: @unchecked Sendable {
 
     private(set) var session: Session?
     private let logger: Logger?
+
+    /// Extra capabilities to include in `using` based on what the session advertises.
+    private var extraCapabilities: [Capability.Key] {
+        var caps: [Capability.Key] = []
+        if session?.capabilities[.mailIndexAI] != nil {
+            caps.append(.mailIndexAI)
+        }
+        return caps
+    }
 }
 
 extension Filter {

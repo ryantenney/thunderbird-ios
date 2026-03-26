@@ -137,11 +137,17 @@ class EmailService {
     private func makeJMAPClient(from server: AccountServer) -> JMAPClient {
         let accountAuth = server.authorization
         let authorization = mapJMAPAuthorization(accountAuth)
-        logger.info("JMAP server: \(server.hostname):\(server.port), auth type: \(authorization.label), empty: \(authorization.isEmpty)")
+        #if DEBUG
+        let usesTLS = server.connectionSecurity != .none
+        #else
+        let usesTLS = true
+        #endif
+        logger.info("JMAP server: \(server.hostname):\(server.port), tls: \(usesTLS), auth type: \(authorization.label), empty: \(authorization.isEmpty)")
         let jmapServer = JMAP.Server(
             authorization: authorization,
             host: server.hostname,
-            port: server.port
+            port: server.port,
+            usesTLS: usesTLS
         )
         return JMAPClient(jmapServer)
     }
@@ -300,6 +306,17 @@ extension DisplayEmail {
         self.hasAttachment = jmapEmail.hasAttachment
         self.threadId = jmapEmail.threadID
         self.htmlBody = nil  // Loaded lazily
+
+        // AI Analysis
+        if let ai = jmapEmail.aiAnalysis {
+            self.aiSummary = ai.summary
+            self.aiCategories = ai.categories
+            self.aiImportance = ai.importance
+            self.aiSentiment = ai.sentiment
+            self.aiRequiresAction = ai.requiresAction
+            self.aiActionItems = ai.actionItems?.map { AIActionItem(description: $0.description, deadline: $0.deadline) }
+            self.aiKeyDates = ai.keyDates?.map { AIKeyDate(date: $0.date, description: $0.description) }
+        }
     }
 }
 

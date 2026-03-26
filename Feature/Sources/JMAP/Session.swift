@@ -8,7 +8,7 @@ public struct Session: CustomStringConvertible, Decodable, Equatable, Sendable {
     public let capabilities: [Capability.Key: Capability]
     public let downloadURLTemplate: String
     public let uploadURLTemplate: String
-    public let eventSourceURL: URL
+    public let eventSourceURL: URL?
     public let apiURL: URL
 
     public func account(_ id: String?) -> SessionAccount? {
@@ -74,7 +74,8 @@ public struct Session: CustomStringConvertible, Decodable, Equatable, Sendable {
         self.capabilities = capabilities
         downloadURLTemplate = try container.decode(String.self, forKey: .downloadUrl)
         uploadURLTemplate = try container.decode(String.self, forKey: .uploadUrl)
-        eventSourceURL = try container.decode(URL.self, forKey: .eventSourceUrl)
+        let eventSourceUrlString = try container.decodeIfPresent(String.self, forKey: .eventSourceUrl) ?? ""
+        eventSourceURL = URL(string: eventSourceUrlString)
         apiURL = try container.decode(URL.self, forKey: .apiUrl)
     }
 

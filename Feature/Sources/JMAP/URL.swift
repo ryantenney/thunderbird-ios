@@ -5,13 +5,13 @@ extension URL {
     /// Generate ``Session`` URL from host and port number.
     ///
     /// All additional URLs and URL templates needed to implement a complete JMAP service are provided in the ``Session``.
-    public static func jmapSession(host: String, port: Int? = nil) throws -> Self {
-        try jmap(host: host, port: port, path: "jmap/session")
+    public static func jmapSession(host: String, port: Int? = nil, scheme: String = "https") throws -> Self {
+        try jmap(host: host, port: port, scheme: scheme, path: "jmap/session")
     }
 
-    static func jmap(host: String, port: Int? = nil, path: String? = nil) throws -> Self {
+    static func jmap(host: String, port: Int? = nil, scheme: String = "https", path: String? = nil) throws -> Self {
         var components: URLComponents = URLComponents()
-        components.scheme = "https"
+        components.scheme = scheme
         guard !host.isEmpty else {
             throw URLError(.cannotFindHost)
         }

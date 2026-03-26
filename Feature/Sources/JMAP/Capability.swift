@@ -5,6 +5,7 @@ public struct Capability: Decodable, Sendable {
         case contacts = "urn:ietf:params:jmap:contacts"
         case core = "urn:ietf:params:jmap:core"
         case mail = "urn:ietf:params:jmap:mail"
+        case mailIndexAI = "urn:ryantenney:params:jmap:mail-index-ai"
         case submission = "urn:ietf:params:jmap:submission"
 
         // MARK: CustomStringConvertible

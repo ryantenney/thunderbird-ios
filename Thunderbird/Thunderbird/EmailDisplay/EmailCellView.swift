@@ -20,6 +20,11 @@ struct EmailCellView: View {
     let hasAttachment: Bool
     let isThread: Bool
 
+    // AI fields
+    let importance: Double?
+    let requiresAction: Bool
+    let categories: [String]
+
     init(email: TempEmail) {
         self.senderText = email.senderText
         self.headerText = email.headerText
@@ -30,21 +35,26 @@ struct EmailCellView: View {
         self.hasAttachment = email.attachments != nil
         self.isThread = email.isThread
         self.pinned = email.pinned
+        self.importance = nil
+        self.requiresAction = false
+        self.categories = []
     }
 
     init(email: DisplayEmail) {
         self.senderText = email.sender
         self.headerText = email.subject
-        self.bodyText = email.preview
+        self.bodyText = email.aiSummary ?? email.preview
         self.dateSent = email.date
         self.unread = !email.isRead
         self.newEmail = false
         self.hasAttachment = email.hasAttachment
         self.isThread = email.threadId != nil
         self.pinned = false
+        self.importance = email.aiImportance
+        self.requiresAction = email.aiRequiresAction ?? false
+        self.categories = email.aiCategories ?? []
     }
 
-    //Doesn't display times properly yes
     func dateFormatter(date: Date) -> String {
         if Calendar.current.isDateInToday(date) {
             return date.formatted(date: .omitted, time: .shortened)
@@ -55,11 +65,11 @@ struct EmailCellView: View {
             relativeDateFormatter.doesRelativeDateFormatting = true
             return relativeDateFormatter.string(from: date)
         }
-
     }
 
     var body: some View {
         VStack(alignment: .leading) {
+            // Row 1: Sender, importance, date
             HStack {
                 if pinned {
                     Image("icon.pin")
@@ -69,6 +79,11 @@ struct EmailCellView: View {
                     .lineLimit(1)
                     .font(.headline)
                     .fontWeight(unread ? .semibold : .regular)
+                if let importance, importance >= 0.8 {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.orange)
+                }
                 Spacer()
                 Text(dateFormatter(date: dateSent))
                     .lineLimit(1)
@@ -76,6 +91,8 @@ struct EmailCellView: View {
                     .truncationMode(.tail)
                     .foregroundColor(.muted)
             }.padding(.leading, pinned ? 0 : 20)
+
+            // Row 2: Unread dot, subject, action badge, attachment, thread
             HStack {
                 if newEmail {
                     Image(systemName: "circle")
@@ -90,6 +107,11 @@ struct EmailCellView: View {
                     .lineLimit(1)
                     .font(.subheadline)
                     .fontWeight(unread ? .semibold : .regular)
+                if requiresAction {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.red)
+                }
                 Spacer()
                 if hasAttachment {
                     Image(systemName: "paperclip")
@@ -105,20 +127,60 @@ struct EmailCellView: View {
                                 .stroke(lineWidth: 1)
                                 .foregroundColor(.muted)
                         )
-
                 }
-
             }
             .padding(.leading, newEmail || unread ? 0 : 20)
+
+            // Row 3: Preview / AI summary
             Text(bodyText)
                 .lineLimit(1)
                 .foregroundColor(.muted)
                 .font(.footnote)
                 .padding(.leading, 20)
 
+            // Row 4: Category pills
+            if !categories.isEmpty {
+                HStack(spacing: 4) {
+                    ForEach(categories.prefix(3), id: \.self) { category in
+                        CategoryPill(category)
+                    }
+                }
+                .padding(.leading, 20)
+            }
         }
     }
+}
 
+struct CategoryPill: View {
+    let label: String
+
+    init(_ label: String) {
+        self.label = label
+    }
+
+    var body: some View {
+        Text(label)
+            .font(.caption2)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.15))
+            .foregroundStyle(color)
+            .clipShape(Capsule())
+    }
+
+    private var color: Color {
+        switch label {
+        case "work": .blue
+        case "personal": .purple
+        case "newsletter": .teal
+        case "receipt", "finance": .green
+        case "action-required": .red
+        case "scheduling": .orange
+        case "travel": .cyan
+        case "marketing": .gray
+        default: .secondary
+        }
+    }
 }
 
 #Preview("Email Cell") {
@@ -135,5 +197,4 @@ struct EmailCellView: View {
         pinned: true
     )
     EmailCellView(email: tempEmail)
-
 }
