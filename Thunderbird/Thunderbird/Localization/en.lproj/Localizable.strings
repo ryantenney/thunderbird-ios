@@ -63,3 +63,21 @@
 "empty_inbox" = "Your inbox is empty";
 "new_messages_will_appear" = "New messages will appear here as they arrive";
 "add_another_account" = "Add another account";
+
+//Action buttons
+"delete_button" = "Delete";
+"archive_button" = "Archive";
+"mark_read_button" = "Mark as read";
+"mark_spam_button" = "Mark as Spam";
+"flag_button" = "Flag";
+"unflag_button" = "Unflag";
+"mute_button" = "Mute";
+"unmute_button" = "Unmute";
+"pin_button" = "Pin";
+"unpin_button" = "Unpin";
+"move_button" = "Move";
+"reply_button" = "Reply";
+"reply_all_button" = "Reply All";
+"forward_button" = "Forward";
+"forward_as_button" = "Forward as attachment";
+"edit_as_new_button" = "Edit as new";

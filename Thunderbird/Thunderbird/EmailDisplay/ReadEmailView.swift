@@ -80,12 +80,59 @@ struct ReadEmailView: View {
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: {
-                            AlertManager.shared.showAlert = true
-                            AlertManager.shared.alertTitle = "More Options"
-                        }) {
-                            Image(systemName: "ellipsis")
-                                .foregroundStyle(.foreground)
+                        Menu {
+                            Button(
+                                "delete_button",
+                                action: {
+
+                                })
+                            Button(
+                                "archive_button",
+                                action: {
+
+                                })
+                            Button(
+                                "mark_read_button",
+                                action: {
+
+                                })
+                            Button(
+                                "mark_spam_button",
+                                action: {
+
+                                })
+                            Button(
+                                "flag_button",
+                                action: {
+
+                                })
+                            Button(
+                                "mute_button",
+                                action: {
+
+                                })
+                            if(email.pinned){
+                                Button(
+                                    "unpin_button",
+                                    action: {
+
+                                    })
+                            }else{
+                                Button(
+                                    "pin_button",
+                                    action: {
+
+                                    })
+                            }
+
+                            Button(
+                                "move_button",
+                                action: {
+
+                                })
+
+                        } label: {
+                            Label("options_button", systemImage: "ellipsis")
                         }
                     }
                     ToolbarItem(placement: .bottomBar) {
@@ -129,8 +176,7 @@ struct ReadEmailView: View {
                             AlertManager.shared.showAlert = true
                             AlertManager.shared.alertTitle = "More"
                         }) {
-                            Image(systemName: "ellipsis")
-                                .foregroundStyle(.foreground)
+                            Label("options_button", systemImage: "ellipsis")
                         }
                     }
                 }
@@ -205,6 +251,8 @@ struct SenderView: View {
     private var date: Date
     @State private var showingAlert = false
     @State private var unimplementedFeatureName: String = ""
+    @State private var showSenderRecipientInfo = false
+    @State private var showEmailOptions = false
 
     var body: some View {
         HStack {
@@ -228,13 +276,52 @@ struct SenderView: View {
                 Text(date, style: .date)
                     .font(.footnote)
                     .padding(.bottom, 4)
-                Button(action: {
-                    //Options
-                    AlertManager.shared.showAlert = true
-                    AlertManager.shared.alertTitle = "More Options"
-                }) {
-                    Image(systemName: "ellipsis")
-                        .foregroundStyle(.foreground)
+                Menu {
+                    Button(
+                        "reply_button",
+                        action: {
+
+                        })
+                    Button(
+                        "reply_all_button",
+                        action: {
+
+                        })
+                    Button(
+                        "forward_button",
+                        action: {
+
+                        })
+                    Button(
+                        "forward_as_button",
+                        action: {
+
+                        })
+                    Button(
+                        "flag_button",
+                        action: {
+
+                        })
+                    Button(
+                        "delete_button",
+                        action: {
+
+                        })
+                    Button(
+                        "archive_button",
+                        action: {
+
+                        })
+                    Button(
+                        "edit_as_new_button",
+                        action: {
+
+                        })
+
+                } label: {
+                    Label("options_button", systemImage: "ellipsis")
+                        .labelStyle(.iconOnly)
+                        .foregroundStyle(.black)
                 }
             }
 
@@ -335,6 +422,7 @@ struct SentimentBadge: View {
         case "negative": return "-"
         default: return ""
         }
+
     }
 }
 
