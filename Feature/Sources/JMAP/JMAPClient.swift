@@ -69,6 +69,34 @@ public class JMAPClient: @unchecked Sendable {
         }
     }
 
+    public func searchEmails(in mailbox: Mailbox, query: String) async throws -> [Email] {
+        if let session {
+            guard let id: String = session.accounts.keys.first else {
+                throw JMAPError.method(.accountNotFound)
+            }
+            logger?.debug("Searching emails in mailbox \(mailbox.name ?? mailbox.id) for: \(query)")
+            let filter = Filter([
+                Email.Condition.inMailbox(mailbox.id),
+                Email.Condition.text(query)
+            ], operator: .and)
+            guard
+                let response: MethodQueryResponse = try await URLSession.shared.jmapAPI(
+                    [
+                        Email.QueryMethod(id, filter: filter, calculateTotal: true, extraCapabilities: extraCapabilities)
+                    ], url: session.apiURL, authorization: server.authorization!
+                ).first as? MethodQueryResponse
+            else {
+                throw JMAPError.underlying(URLError(.cannotDecodeContentData))
+            }
+            logger?.info("Search returned \(response.ids.count) email IDs (total: \(response.total))")
+            guard !response.ids.isEmpty else { return [] }
+            return try await emails(response.ids)
+        } else {
+            try await session()
+            return try await searchEmails(in: mailbox, query: query)
+        }
+    }
+
     public func emails(_ ids: [String], configuration: Email.GetMethod.Configuration? = nil) async throws -> [Email] {
         if let session {
             guard let id: String = session.accounts.keys.first else {

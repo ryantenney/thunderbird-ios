@@ -12,6 +12,7 @@ struct EmailListView: View {
     @Environment(Accounts.self) private var accounts: Accounts
     @Environment(\.openURL) private var openURL
     var emailService: EmailService
+    @State private var searchText: String = ""
 
     func sortEmails() {
         //Not yet implemented
@@ -22,13 +23,13 @@ struct EmailListView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
-                if emailService.isLoading && emailService.emails.isEmpty {
+                if emailService.isLoading && emailService.displayedEmails.isEmpty {
                     VStack {
                         ProgressView("Loading emails…")
                             .padding()
                         Spacer()
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let error = emailService.error, emailService.emails.isEmpty {
+                } else if let error = emailService.error, emailService.displayedEmails.isEmpty {
                     VStack {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.largeTitle)
@@ -50,7 +51,21 @@ struct EmailListView: View {
                         .padding(.top, 8)
                         Spacer()
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if emailService.emails.isEmpty {
+                } else if let results = emailService.searchResults, results.isEmpty {
+                    VStack {
+                        Image(systemName: "magnifyingglass")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                            .padding(.bottom, 8)
+                        Text("No results found")
+                            .font(.headline)
+                            .padding(.bottom, 4)
+                        Text("Try a different search term")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if emailService.displayedEmails.isEmpty {
                     VStack {
                         Text("empty_inbox")
                             .padding(.bottom, 5)
@@ -66,7 +81,7 @@ struct EmailListView: View {
                         Spacer()
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    List(emailService.emails) { email in
+                    List(emailService.displayedEmails) { email in
                         EmailCellView(email: email)
                             .listRowSeparator(.hidden)
                             .background {
@@ -81,6 +96,13 @@ struct EmailListView: View {
                         .scrollContentBackground(.hidden)
                         .refreshable {
                             await emailService.fetchInbox()
+                        }
+                        .overlay {
+                            if emailService.isSearching {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                                    .padding(.top, 20)
+                            }
                         }
                 }
                 Button {
@@ -98,6 +120,21 @@ struct EmailListView: View {
                 .padding()
             }
             .navigationTitle("inbox_header")
+            .searchable(text: $searchText, prompt: "Search emails")
+            .task(id: searchText) {
+                try? await Task.sleep(for: .milliseconds(400))
+                guard !Task.isCancelled else { return }
+                if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    emailService.clearSearch()
+                } else {
+                    await emailService.searchEmails(query: searchText)
+                }
+            }
+            .onChange(of: searchText) {
+                if searchText.isEmpty {
+                    emailService.clearSearch()
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {

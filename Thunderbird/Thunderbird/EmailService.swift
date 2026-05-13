@@ -12,6 +12,13 @@ class EmailService {
     private(set) var emails: [DisplayEmail] = []
     private(set) var isLoading: Bool = false
     private(set) var error: Error?
+    private(set) var isSearching: Bool = false
+    private(set) var searchResults: [DisplayEmail]?
+
+    /// The emails to display — search results when searching, inbox otherwise.
+    var displayedEmails: [DisplayEmail] {
+        searchResults ?? emails
+    }
 
     private let account: Account
     private var mailClient: MailClient?
@@ -58,6 +65,33 @@ class EmailService {
         }
     }
 
+    // MARK: - Search
+
+    func searchEmails(query: String) async {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            clearSearch()
+            return
+        }
+
+        isSearching = true
+        do {
+            try await withRetry {
+                try await self.doSearchEmails(query: trimmed)
+            }
+        } catch {
+            self.error = error
+            logger.error("Failed to search emails: \(error)")
+        }
+        isSearching = false
+    }
+
+    func clearSearch() {
+        searchResults = nil
+        isSearching = false
+        error = nil
+    }
+
     // MARK: - Private
 
     private enum MailClient {
@@ -95,6 +129,21 @@ class EmailService {
             return try await fetchJMAPBody(email: email, client: client)
         case .imap(let client):
             return try await fetchIMAPBody(email: email, client: client)
+        }
+    }
+
+    private func doSearchEmails(query: String) async throws {
+        guard let server = account.incomingServer else {
+            throw EmailServiceError.noIncomingServer
+        }
+
+        switch server.serverProtocol {
+        case .jmap:
+            try await searchJMAPEmails(query: query, server: server)
+        case .imap:
+            searchIMAPEmails(query: query)
+        default:
+            throw EmailServiceError.unsupportedProtocol(server.serverProtocol)
         }
     }
 
@@ -166,6 +215,27 @@ class EmailService {
         }
     }
 
+    private func searchJMAPEmails(query: String, server: AccountServer) async throws {
+        let client: JMAPClient
+        if case .jmap(let existingClient) = mailClient {
+            client = existingClient
+        } else {
+            client = makeJMAPClient(from: server)
+            self.mailClient = .jmap(client)
+            try await client.session()
+        }
+
+        let mailboxes = try await client.mailboxes()
+        guard let inbox = mailboxes.first(where: { $0.role == .inbox }) else {
+            throw EmailServiceError.inboxNotFound
+        }
+
+        let jmapEmails = try await client.searchEmails(in: inbox, query: query)
+        searchResults = jmapEmails.map { DisplayEmail(from: $0) }
+            .sorted { $0.date > $1.date }
+        logger.info("Search found \(self.searchResults?.count ?? 0) JMAP emails for '\(query)'")
+    }
+
     // MARK: IMAP
 
     private func fetchIMAPInbox(server: AccountServer) async throws {
@@ -233,6 +303,17 @@ class EmailService {
             port: server.port
         )
         return IMAPClient(imapServer)
+    }
+
+    private func searchIMAPEmails(query: String) {
+        let lowered = query.lowercased()
+        searchResults = emails.filter { email in
+            email.sender.lowercased().contains(lowered)
+                || email.senderEmail.lowercased().contains(lowered)
+                || email.subject.lowercased().contains(lowered)
+                || email.preview.lowercased().contains(lowered)
+        }
+        logger.info("Client-side search found \(self.searchResults?.count ?? 0) IMAP emails for '\(query)'")
     }
 
     // MARK: Retry
