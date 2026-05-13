@@ -96,8 +96,8 @@ platform :ios do
     )
 
     # Find the built .app and install on device
-    app_path = Dir.glob(File.expand_path("~/Library/Developer/Xcode/DerivedData/Thunderbird-*/Build/Products/Debug-iphoneos/Thunderbird.app")).first
-    UI.user_error!("Could not find built Thunderbird.app") unless app_path
+    app_path = Dir.glob(File.expand_path("~/Library/Developer/Xcode/DerivedData/Thunderbird-*/Build/Products/Debug-iphoneos/Thunderbird*.app")).sort_by { |f| File.mtime(f) }.last
+    UI.user_error!("Could not find built .app in DerivedData") unless app_path
     sh("xcrun devicectl device install app --device '#{device_name}' '#{app_path}'")
   end
 

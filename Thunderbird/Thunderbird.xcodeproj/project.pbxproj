@@ -482,8 +482,6 @@
 				A2ABB16ADC8BDCC99FF644CC /* PBXTargetDependency */,
 			);
 			name = ThunderbirdTests_macOS;
-			packageProductDependencies = (
-			);
 			productName = ThunderbirdTests_macOS;
 			productReference = 6B37380E9CB0D28BE2D9960A /* ThunderbirdTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -501,8 +499,6 @@
 				48690FF11A4689B5FC20D7B1 /* PBXTargetDependency */,
 			);
 			name = ThunderbirdTests_iOS;
-			packageProductDependencies = (
-			);
 			productName = ThunderbirdTests_iOS;
 			productReference = 31DA0223219D2210219F524F /* ThunderbirdTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -606,10 +602,11 @@
 			mainGroup = 7B56B9973E6466FBC8D67319;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				4DC844F9DA26F0461924F21C /* XCLocalSwiftPackageReference "../Bolt" */,
-				F240C50716FC4ACA41DE4509 /* XCLocalSwiftPackageReference "../Core" */,
-				DC0AACD1BB9A3DC62D6C4A9F /* XCLocalSwiftPackageReference "../Feature" */,
+				4DC844F9DA26F0461924F21C /* XCLocalSwiftPackageReference "Bolt" */,
+				F240C50716FC4ACA41DE4509 /* XCLocalSwiftPackageReference "Core" */,
+				DC0AACD1BB9A3DC62D6C4A9F /* XCLocalSwiftPackageReference "Feature" */,
 			);
+			productRefGroup = 5046C44BB6C9EB7C3CD75C6A /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -915,11 +912,11 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Thunderbird/Thunderbird.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 5532R62J62;
 				DOCC_HOSTING_BASE_PATH = "thunderbird-ios";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
@@ -943,6 +940,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ryantenney.thunderbird;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.ryantenney.thunderbird";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -958,9 +956,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5532R62J62;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -968,8 +968,9 @@
 					"@loader_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = net.thunderbird.ThunderbirdTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ryantenney.thunderbird;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.ryantenney.thunderbird";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
@@ -988,10 +989,10 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Thunderbird/Thunderbird.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Distribution";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 5532R62J62;
 				DOCC_HOSTING_BASE_PATH = "thunderbird-ios";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
@@ -1015,6 +1016,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ryantenney.thunderbird;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.ryantenney.thunderbird";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -1030,8 +1032,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5532R62J62;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1039,8 +1043,9 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = net.thunderbird.ThunderbirdTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ryantenney.thunderbird;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.ryantenney.thunderbird";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
@@ -1125,8 +1130,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5532R62J62;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1134,8 +1141,9 @@
 					"@loader_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = net.thunderbird.ThunderbirdTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ryantenney.thunderbird;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.ryantenney.thunderbird";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
@@ -1154,8 +1162,8 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Thunderbird/Thunderbird.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5532R62J62;
 				DOCC_HOSTING_BASE_PATH = "thunderbird-ios";
@@ -1181,7 +1189,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ryantenney.thunderbird;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.ryantenney.thunderbird";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -1200,7 +1208,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Thunderbird/Thunderbird.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -1228,6 +1236,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ryantenney.thunderbird;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.ryantenney.thunderbird";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -1243,9 +1252,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5532R62J62;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1253,8 +1264,9 @@
 					"@loader_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = net.thunderbird.ThunderbirdTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ryantenney.thunderbird;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "match Development com.ryantenney.thunderbird";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
@@ -1317,15 +1329,15 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		4DC844F9DA26F0461924F21C /* XCLocalSwiftPackageReference "../Bolt" */ = {
+		4DC844F9DA26F0461924F21C /* XCLocalSwiftPackageReference "Bolt" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Bolt;
 		};
-		DC0AACD1BB9A3DC62D6C4A9F /* XCLocalSwiftPackageReference "../Feature" */ = {
+		DC0AACD1BB9A3DC62D6C4A9F /* XCLocalSwiftPackageReference "Feature" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Feature;
 		};
-		F240C50716FC4ACA41DE4509 /* XCLocalSwiftPackageReference "../Core" */ = {
+		F240C50716FC4ACA41DE4509 /* XCLocalSwiftPackageReference "Core" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Core;
 		};
