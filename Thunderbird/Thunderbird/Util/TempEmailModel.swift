@@ -20,6 +20,7 @@ struct DisplayEmail: Hashable, Identifiable {
     let isRead: Bool
     let hasAttachment: Bool
     let threadId: String?
+    var pinned: Bool = false
     /// HTML body content, populated lazily when the user opens the email.
     var htmlBody: String?
 
