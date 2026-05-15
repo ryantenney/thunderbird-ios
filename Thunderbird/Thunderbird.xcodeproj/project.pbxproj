@@ -30,6 +30,12 @@
 		43A705DAEF8AD89BD71DBAED /* AuthorizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0685CDF42DE2DFF65C95BC3A /* AuthorizationView.swift */; };
 		46243679AF266BD9266A55E2 /* TempEmailModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11084C0FFF983852790F6247 /* TempEmailModel.swift */; };
 		4D54A155506560CF77A37F1C /* EmailService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80FE3610020947F82222987 /* EmailService.swift */; };
+		0AC1DE00000000000000A001 /* MailIndexClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC1DE000000000000000001 /* MailIndexClient.swift */; };
+		0AC1DE00000000000000A002 /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC1DE000000000000000002 /* PushNotificationManager.swift */; };
+		0AC1DE00000000000000A003 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC1DE000000000000000003 /* AppDelegate.swift */; };
+		0AC1DE00000000000000B001 /* MailIndexClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC1DE000000000000000001 /* MailIndexClient.swift */; };
+		0AC1DE00000000000000B002 /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC1DE000000000000000002 /* PushNotificationManager.swift */; };
+		0AC1DE00000000000000B003 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC1DE000000000000000003 /* AppDelegate.swift */; };
 		4EC733D168695D7CCE39C9F5 /* AutoconfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A707888A1FAF07D2FA4EFB3 /* AutoconfigView.swift */; };
 		4FE4B79BDBA7212D89033A71 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = 5876D5CBCDB7E7614684C154 /* Core */; };
 		5646520749F4FCBE905C686E /* Documentation.docc in Sources */ = {isa = PBXBuildFile; fileRef = 08C4E5E80E687D277E8FCF1C /* Documentation.docc */; };
@@ -233,6 +239,9 @@
 		F7A8C379B192D9BB9A9C7CBF /* lv */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = lv; path = lv.lproj/Localizable.strings; sourceTree = "<group>"; };
 		F7AF168BD3D6FB55D914F214 /* EditAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditAccountView.swift; sourceTree = "<group>"; };
 		F80FE3610020947F82222987 /* EmailService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailService.swift; sourceTree = "<group>"; };
+		0AC1DE000000000000000001 /* MailIndexClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Push/MailIndexClient.swift; sourceTree = "<group>"; };
+		0AC1DE000000000000000002 /* PushNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Push/PushNotificationManager.swift; sourceTree = "<group>"; };
+		0AC1DE000000000000000003 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Push/AppDelegate.swift; sourceTree = "<group>"; };
 		F8E453E41EA98C57D5C519AE /* el */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = el; path = el.lproj/Localizable.strings; sourceTree = "<group>"; };
 		F96C92CFAC0977B9C5A27093 /* hy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = hy; path = hy.lproj/Localizable.strings; sourceTree = "<group>"; };
 		FA7830A59292A53AD0A90DF0 /* br */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = br; path = br.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -363,6 +372,9 @@
 				98233C47737143F639AEE863 /* EmailAccountTypeSelection.swift */,
 				4D2EFB47A4F5A88E784D25E8 /* EmailDisplay */,
 				F80FE3610020947F82222987 /* EmailService.swift */,
+				0AC1DE000000000000000003 /* AppDelegate.swift */,
+				0AC1DE000000000000000001 /* MailIndexClient.swift */,
+				0AC1DE000000000000000002 /* PushNotificationManager.swift */,
 				DC52A619FB2A71FE5815723F /* Info.plist */,
 				8895698EA40EC90A518F39D8 /* Localization */,
 				79C9E4A136E864CAD4C9494A /* ManualAccount.swift */,
@@ -676,6 +688,9 @@
 				38954106B33CE70484150097 /* EmailCellView.swift in Sources */,
 				8A306E37B3A82A53E7BE0F88 /* EmailListView.swift in Sources */,
 				4D54A155506560CF77A37F1C /* EmailService.swift in Sources */,
+				0AC1DE00000000000000A001 /* MailIndexClient.swift in Sources */,
+				0AC1DE00000000000000A002 /* PushNotificationManager.swift in Sources */,
+				0AC1DE00000000000000A003 /* AppDelegate.swift in Sources */,
 				86BEC960BCAC57F54EEC4002 /* FeatureFlagDebugView.swift in Sources */,
 				8525AC86455DF63FAE8B14FE /* FeatureFlags.swift in Sources */,
 				310A5E7ED2079C2C69A41C8E /* FeatureNotImplementedView.swift in Sources */,
@@ -723,6 +738,9 @@
 				5F34FC3863C0A8F3858AE84A /* EmailCellView.swift in Sources */,
 				7B3DF9DFC804D14B9F3002FD /* EmailListView.swift in Sources */,
 				A6456780C60374F9451E3C5C /* EmailService.swift in Sources */,
+				0AC1DE00000000000000B001 /* MailIndexClient.swift in Sources */,
+				0AC1DE00000000000000B002 /* PushNotificationManager.swift in Sources */,
+				0AC1DE00000000000000B003 /* AppDelegate.swift in Sources */,
 				41E2D414451EC02F1168D90D /* FeatureFlagDebugView.swift in Sources */,
 				BF54D7FBB9C8E5DA296DD9D9 /* FeatureFlags.swift in Sources */,
 				E7ABA081F15EB7F61EBF9C3B /* FeatureNotImplementedView.swift in Sources */,

@@ -6,6 +6,11 @@ struct ContentView: View {
     @State private var hasAuthorization: Bool = false
     @State private var emailService: EmailService?
     @Environment(Accounts.self) private var accounts: Accounts
+    @Environment(PushNotificationManager.self) private var pushManager: PushNotificationManager
+
+    private var configuredAccount: Account? {
+        accounts.allAccounts.first { $0.incomingServer != nil }
+    }
 
     // MARK: View
     var body: some View {
@@ -27,12 +32,8 @@ struct ContentView: View {
 
         }
         .onChange(of: accounts.allAccounts, initial: true) {
-            // Find the first account with a configured incoming server
-            let configuredAccount = accounts.allAccounts.first { account in
-                account.incomingServer != nil
-            }
-
-            if let account = configuredAccount {
+            let account = configuredAccount
+            if let account {
                 hasAuthorization = true
                 emailService = EmailService(account: account)
                 isPresented = false
@@ -40,6 +41,15 @@ struct ContentView: View {
                 hasAuthorization = false
                 emailService = nil
             }
+            // Keep mail-index's device registry in sync. Passing nil on
+            // sign-out unregisters the previously-registered device.
+            Task { await pushManager.syncRegistration(for: account) }
+        }
+        .onChange(of: pushManager.deviceTokenHex) {
+            // The APNS token usually arrives after the account is already
+            // configured; register once it does.
+            guard let account = configuredAccount else { return }
+            Task { await pushManager.syncRegistration(for: account) }
         }
     }
 }
@@ -47,5 +57,5 @@ struct ContentView: View {
 #Preview("Content View") {
     @Previewable @State var accounts: Accounts = Accounts()
 
-    ContentView().environment(accounts)
+    ContentView().environment(accounts).environment(PushNotificationManager.shared)
 }
